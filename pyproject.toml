@@ -1,0 +1,25 @@
+[project]
+name = "structural-probe-repl"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Aaron Aggarwal",email = "aggarwal.aaron@gmail.com"}
+]
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+    "torch (==2.2.0)",
+    "transformers (==4.40.0)",
+    "datasets (==3.5.1)",
+    "scipy (==1.15.2)",
+    "scikit-learn (==1.6.1)",
+    "numpy (>=1.26.4,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
