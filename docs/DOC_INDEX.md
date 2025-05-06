@@ -8,3 +8,4 @@ Last updated: $(date +%F)
 | Environment Setup   | docs/ENV_SETUP.md      | Native + Docker install & freeze steps    | Update on any env change             |
 | Dependency Notes    | docs/DEPENDENCIES.md   | Special pins, NumPy<2, Rust requirement   | Update when pins move                |
 | Frozen requirements | requirements-mps.txt   | Exact native deps via poetry export       | Regenerate after dependency change   |
+| Architecture        | docs/ARCHITECTURE.md   | Mapping of legacy & new code structure | Update on any structural/layout change |
