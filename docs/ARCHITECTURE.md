@@ -1,54 +1,59 @@
 # Repository Architecture
 
-This document explains the layout of both the legacy structural probe code and the new project structure.
+Last updated: 2025-05-06
 
-## 1. Legacy code (`src/legacy/structural_probe`)
+This document explains the layout of both the original Hewitt & Manning structural probe code (vendored into this project) and the new project structure.
 
-- **README.md / LICENSE**  
-  Original paper’s overview and license.
+## 1. Original Hewitt & Manning Code (`src/legacy/structural_probe`)
 
-- **doc‑assets/**  
-  Figures (PNG) used in the original write‑up.
+This directory contains a copy of the original codebase from `john-hewitt/structural-probes`. It is PyTorch-based (approx. v1.0-1.3).
 
-- **download_example.sh**  
-  Fetches a small PTB sample for quick smoke tests.
+-   **README.md / LICENSE:** Original project's overview and license.
+-   **doc-assets/:** Figures (PNG) used in the original paper/README.
+-   **download_example.sh:** Script to fetch a small sample of the English EWT Universal Dependencies corpus and pre-trained probe parameters. **Note: The URLs in this script are currently dead (404).**
+-   **example/:**
+    -   **config/:** YAML configuration files for experiments on various models (e.g., ELMo, BERT-base) and tasks (parse-distance `prd`, parse-depth `pad`). Includes subdirectories like `naacl19/` for paper-specific configs.
+    -   **data/:** Intended location for example datasets (e.g., `en_ewt-ud-sample/`) including `.conllu` files and pre-computed embeddings (e.g., `.elmo-layers.hdf5`).
+    -   **demo-bert.yaml:** An end-to-end demo configuration, likely using pre-trained probe parameters.
+-   **requirements.txt:** Python package dependencies for the original code (e.g., `Cython`, `seaborn`, `PyYAML`, `numpy`, `h5py`, `tqdm`). PyTorch itself and `pytorch-pretrained-bert` were to be installed separately according to their README.
+-   **scripts/:** Data preparation utilities:
+    -   `convert_conll_to_raw.py`
+    -   `convert_raw_to_bert.py`
+    -   `convert_raw_to_elmo.sh`
+    -   `convert_splits_to_depparse.sh` (uses Stanford CoreNLP)
+-   **structural-probes/:** Core probe implementation and orchestration:
+    -   `probe.py`: Core structural probe logic.
+    -   `model.py`, `data.py`: Model loading, data handling (CoNLLU, HDF5 embeddings).
+    -   `run_experiment.py`, `run_demo.py`: Main drivers for experiments and demos.
+    -   `loss.py`, `regimen.py`, `reporter.py`, `task.py`: Training loop, loss functions, reporting, and task definitions.
 
-- **example/**  
-  - **config/** — YAML configs for pad/prd runs of various models (bert‑base, elmo, etc.).  
-  - **demo‑bert.yaml** — an end‑to‑end demo configuration.
+## 2. Current Project Scaffold (`structural-probe-repl/`)
 
-- **requirements.txt**  
-  Exact Python package pins expected by the legacy code.
-
-- **scripts/**  
-  Data‑prep utilities:  
-  - `convert_conll_to_raw.py`  
-  - `convert_raw_to_bert.py`  
-  - `convert_raw_to_elmo.sh`  
-  - `convert_splits_to_depparse.sh`
-
-- **structural‑probes/**  
-  Core probe implementation and orchestration:  
-  - `probe.py` — depth‑based structural probe.  
-  - `model.py`, `data.py` — model and PTB loading.  
-  - `run_experiment.py` / `run_demo.py` — experiment drivers.  
-  - `loss.py`, `regimen.py`, `reporter.py`, `task.py` — training, logging, and evaluation.
-
-## 2. New project scaffold (`src/`)
-
-- **legacy/**  
-  Contains the entire unmodified legacy codebase (see above).
-
-- **torch_probe/**  
-  _(To be created)_ For the new PyTorch re‑implementation of the structural probe.
-
-- **common/**  
-  _(To be created)_ Shared utilities (e.g. PTB parser, metrics, config loader).
+-   **`src/`:**
+    -   **`legacy/structural_probe/`:** Contains the entire unmodified Hewitt & Manning codebase (see section 1).
+    -   **`torch_probe/`:** *(To be created)* Intended for the new PyTorch (v2.x) re-implementation of the structural probe.
+    -   **`common/`:** *(To be created)* For shared utilities (e.g., PTB parsing, metrics, modern config loading) used by new experiments.
+-   **`env/`:**
+    -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`.
+    -   *(Future: `Dockerfile.cuda` for modern LLM experiments on remote GPUs).*
+-   **`scripts/`:**
+    -   **`check_legacy_env.sh`:** Health check script for the `probe:legacy_pt_cpu` Docker container.
+    -   **`run_legacy_probe.sh`:** Wrapper script to execute `run_experiment.py` from the legacy code within its Docker container.
+    -   *(Future: Scripts for data preprocessing, running new experiments, etc.)*
+-   **`data/`:** *(To be created/populated)* For storing datasets like PTB, processed versions, and generated embeddings.
+-   **`tests/`:** *(To be created)* For unit tests, integration tests, and smoke tests.
+-   **`paper/`:** *(To be created)* For LaTeX source, figures, and bibliography for any publications.
+-   **`notebooks/`:** *(To be created, optional)* For exploratory data analysis (EDA) and plotting.
+-   **`results/`:** *(To be created, gitignored)* For storing outputs of experiments (logs, metrics, saved models/probes).
 
 ## 3. Documentation (`docs/`)
 
-- `ENV_SETUP.md`  
-- `DEPENDENCIES.md`  
-- `DOC_INDEX.md`  
-- `ARCHITECTURE.md`  ← *this file*
-
+This directory houses all project documentation. Key files include:
+-   `README.md` (Project root): Overall project summary and entry point.
+-   `ENV_SETUP.md`: Instructions for setting up native macOS (MPS) and Dockerized (legacy CPU, future CUDA) environments.
+-   `DEPENDENCIES.md`: Notes on key dependencies and version constraints for both native and containerized environments.
+-   `DOC_INDEX.md`: Master index of all documentation files.
+-   `ARCHITECTURE.md`: *This file*, describing the project's structure.
+-   `HISTORY.md`: Chronological log of build/debug milestones and resolutions.
+-   `QUIRKS.md`: Lists non-obvious issues, surprises, and workarounds encountered.
+-   *(Future: More detailed docs on specific components as they are developed).*
