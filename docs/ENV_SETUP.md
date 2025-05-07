@@ -1,6 +1,6 @@
 # Environment Setup
 
-Last updated: 2025-05-06
+Last updated: 2025-05-07
 
 This guide details setting up the development environments for the `structural-probe-repl` project:
 1.  Native macOS environment for current PyTorch (MPS accelerated).
@@ -33,8 +33,8 @@ pipx ensurepath # Ensures pipx bin directory is on PATH (may require shell resta
 poetry --version   # Verify installation (e.g., Poetry (version 2.1.2))
 
 # 3. Clone Project & Setup Python Environment with Poetry
-git clone git@github.com:AaronKAggarwal/structural-probe-repl.git # Or your repo URL
-cd structural-probe-repl
+# git clone git@github.com:AaronKAggarwal/structural-probe-repl.git # Or your repo URL
+# cd structural-probe-repl
 poetry env use $(brew --prefix python@3.11)/bin/python3.11 # Explicitly tell Poetry to use brew's Python 3.11
 poetry install --no-root # Installs dependencies from pyproject.toml, --no-root if project isn't a package itself
 

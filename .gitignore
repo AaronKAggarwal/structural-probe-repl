@@ -1,5 +1,99 @@
+# --- Python ---
 __pycache__/
-.pytest_cache/
 *.pyc
-data/cache/
-/data_staging/
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+pip-wheel-metadata/
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual Environments ---
+.env
+.venv
+env/      # Careful: We *do* version control env/Dockerfile.* but ignore the rest
+!env/Dockerfile*
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --- IDE / Editor / OS Files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.AppleDouble
+*.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Testing / Coverage ---
+.pytest_cache/
+.coverage
+*.cov
+nosetests.xml
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# --- Data Staging / Large Files ---
+/data_staging/          # Ignore downloaded full datasets and generated sample data/embeddings
+*.hdf5                  # Generally ignore large HDF5 files unless explicitly tracked
+*.h5
+*.params                # Ignore downloaded model parameters (like the .params from H&M)
+
+# --- Results / Outputs ---
+/results_staging/       # Ignore locally mounted results from container runs
+/results/               # General results directory - adjust if needed
+*.log                   # Ignore log files by default
+*.tsv
+*.csv
+*.png                   # Ignore generated images/plots by default
+*.pdf                   # Ignore generated PDFs (like TikZ output) by default
+*.tikz                  # Ignore generated TikZ files
+*.observations
+*.predictions
+*.spearmanr
+*.spearmanr-5-50-mean   # Or use *.spearmanr*
+*.uuas
+*.root_acc
+
+# --- Specific to H&M Legacy Code Outputs ---
+# Ignore the results dir within the legacy code structure too
+src/legacy/structural_probe/example/results/ 
+
+# --- Poetry ---
+# poetry.lock should typically be committed, so DO NOT ignore it.
+# Ignore poetry cache / config if necessary (usually not needed)
+# .poetry/
+
+# --- Other ---
+*.ipynb_checkpoints
+*.DS_Store
+
+# --- Secrets ---
+# (Add any files containing secrets, keys, passwords here - none expected for this project)
+# credentials.yaml
+# *.env

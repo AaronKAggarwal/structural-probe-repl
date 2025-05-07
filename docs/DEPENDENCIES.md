@@ -1,6 +1,6 @@
 # Dependency Notes
 
-Last updated: 2025-05-06
+Last updated: 2025-05-07
 
 This document outlines key dependencies, version pins, and rationales for both the native macOS development environment and the containerized environments.
 
@@ -11,9 +11,9 @@ This environment is managed by Poetry and is intended for local development, deb
 | Package / Tool           | Pin / Version                | Rationale                                                                      |
 |--------------------------|------------------------------|--------------------------------------------------------------------------------|
 | **Python**               | `3.11.x`                     | Current PyTorch (2.2.x) wheels available; 3.12/3.13 had limited/no support at time of setup. |
-| **Poetry**               | `2.1.2` (via `pipx`)         | Dependency manager. Installed via `pipx` for user-space isolation and plugin compatibility (vs. Homebrew). |
+| **Poetry**               | `~2.1.2` (via `pipx`)        | Dependency manager. Installed via `pipx` for user-space isolation and plugin compatibility (vs. Homebrew). |
 | `poetry-plugin-export`   | `~1.8.0` or `~1.9.0`         | Provides `poetry export` for generating `requirements.txt` files. Installed via `poetry self add`. |
-| **Torch**                | `2.2.0` (or latest `2.2.x`)  | Stable MPS backend support on Apple Silicon.                                   |
+| **Torch**                | `~2.2.0` (or latest `2.2.x`) | Stable MPS backend support on Apple Silicon.                                   |
 | **NumPy**                | `<2.0` (e.g., `~1.26.4`)      | **Critical Pin:** PyTorch 2.2.x is compiled against NumPy 1.x headers. NumPy 2.0 introduced breaking API changes. |
 | **Transformers**         | `~4.40.0`                    | Hugging Face library for models. Version chosen for compatibility with `tokenizers`. |
 | **Tokenizers**           | `~0.19.1`                    | Hugging Face tokenization library. Requires Rust for compilation from `sdist` on `arm64` (macOS). |
@@ -24,7 +24,7 @@ _Full native dependency list is maintained in `poetry.lock` and can be exported 
 
 ## 2. Legacy Probe Container (`probe:legacy_pt_cpu`)
 
-This Docker container aims to replicate the environment for the original Hewitt & Manning (2019) code, which is PyTorch-based (approx. v1.3). Built for `linux/amd64`.
+This Docker container replicates the environment for the original Hewitt & Manning (2019) code, which is PyTorch-based (approx. v1.3). Built for `linux/amd64`.
 
 **Base Image:** `python:3.7-slim-buster` (provides Python 3.7.17 on Debian Buster)
 
@@ -35,14 +35,16 @@ This Docker container aims to replicate the environment for the original Hewitt 
 | `torch`                  | `1.3.0+cpu`   | Compatible with original code's era (H&M used ~1.0), AllenNLP 0.9.0, CPU-only.     |
 | `torchvision`            | `0.4.1+cpu`   | Companion to PyTorch 1.3.0, CPU-only.                                              |
 | `allennlp`               | `0.9.0`       | For ELMo embedding generation/handling as per H&M scripts/README.                  |
-| `numpy`                  | `1.19.5`      | Compatible with PyTorch 1.3 and AllenNLP 0.9.0. (Note: H&M `requirements.txt` did not pin). |
-| `scipy`                  | `1.5.4`       | Compatible with PyTorch 1.3 and AllenNLP 0.9.0. (Note: H&M `requirements.txt` did not pin). |
+| `numpy`                  | `1.19.5`      | Compatible with PyTorch 1.3 and AllenNLP 0.9.0.                                  |
+| `scipy`                  | `1.5.4`       | Compatible with PyTorch 1.3 and AllenNLP 0.9.0.                                  |
 | `PyYAML`                 | `3.13`        | Pre-dates API change requiring `Loader` arg for `yaml.load()`, as used in H&M code. |
 | `tqdm`                   | `4.47.0`      | Last version found to robustly support Python 3.7 during testing.                  |
 | `pytorch-pretrained-bert`| `0.6.2`       | Legacy library used by H&M for BERT embeddings (now part of `transformers`).        |
 | `protobuf`               | `3.20.1`      | Pinned for general compatibility in older Python/library environments.               |
 | `scikit-learn`           | `0.23.2`      | General ML utilities, reasonable version for the era.                              |
 | `nltk`                   | `3.5`         | NLP utilities, reasonable version for the era.                                     |
+| `overrides`              | `3.1.0`       | Pinned for compatibility with AllenNLP 0.9.0 to resolve import/TypeError.        |
+| `typing-extensions`      | `3.7.4`       | Pinned for compatibility with AllenNLP 0.9.0 and Python 3.7's typing.           |
 | `Cython`                 | (No pin)      | From H&M `requirements.txt`. Installed by `pip`.                                   |
 | `seaborn`                | (No pin)      | From H&M `requirements.txt`, for plotting. Installed by `pip`.                     |
 | `h5py`                   | (No pin)      | From H&M `requirements.txt`, for HDF5 file handling. Installed by `pip`.           |

@@ -1,6 +1,6 @@
 # Repository Architecture
 
-Last updated: 2025-05-06
+Last updated: 2025-05-07
 
 This document explains the layout of both the original Hewitt & Manning structural probe code (vendored into this project) and the new project structure.
 
@@ -10,41 +10,47 @@ This directory contains a copy of the original codebase from `john-hewitt/struct
 
 -   **README.md / LICENSE:** Original project's overview and license.
 -   **doc-assets/:** Figures (PNG) used in the original paper/README.
--   **download_example.sh:** Script to fetch a small sample of the English EWT Universal Dependencies corpus and pre-trained probe parameters. **Note: The URLs in this script are currently dead (404).**
+-   **download_example.sh:** Script to fetch a small sample of the English EWT Universal Dependencies corpus and pre-trained probe parameters. **Note: The URLs in this script are currently dead (404). This script is NOT used in the current Docker build.**
 -   **example/:**
     -   **config/:** YAML configuration files for experiments on various models (e.g., ELMo, BERT-base) and tasks (parse-distance `prd`, parse-depth `pad`). Includes subdirectories like `naacl19/` for paper-specific configs.
-    -   **data/:** Intended location for example datasets (e.g., `en_ewt-ud-sample/`) including `.conllu` files and pre-computed embeddings (e.g., `.elmo-layers.hdf5`).
-    -   **demo-bert.yaml:** An end-to-end demo configuration, likely using pre-trained probe parameters.
+    -   **data/:** Original intended location for example datasets (e.g., `en_ewt-ud-sample/`) including `.conllu` files and pre-computed embeddings (e.g., `.elmo-layers.hdf5`). Our prepared sample data is now copied here during Docker build.
+    -   **demo-bert.yaml:** An end-to-end demo configuration, likely using pre-trained probe parameters (which are also from dead links).
 -   **requirements.txt:** Python package dependencies for the original code (e.g., `Cython`, `seaborn`, `PyYAML`, `numpy`, `h5py`, `tqdm`). PyTorch itself and `pytorch-pretrained-bert` were to be installed separately according to their README.
--   **scripts/:** Data preparation utilities:
+-   **scripts/:** Original data preparation utilities:
     -   `convert_conll_to_raw.py`
     -   `convert_raw_to_bert.py`
     -   `convert_raw_to_elmo.sh`
     -   `convert_splits_to_depparse.sh` (uses Stanford CoreNLP)
 -   **structural-probes/:** Core probe implementation and orchestration:
     -   `probe.py`: Core structural probe logic.
-    -   `model.py`, `data.py`: Model loading, data handling (CoNLLU, HDF5 embeddings).
+    -   `model.py`, `data.py`: Model loading, data handling (CoNLLU, HDF5 embeddings). **Note: `data.py` has been locally modified to correctly handle CoNLLU MWTs for token counting.**
     -   `run_experiment.py`, `run_demo.py`: Main drivers for experiments and demos.
     -   `loss.py`, `regimen.py`, `reporter.py`, `task.py`: Training loop, loss functions, reporting, and task definitions.
 
 ## 2. Current Project Scaffold (`structural-probe-repl/`)
 
 -   **`src/`:**
-    -   **`legacy/structural_probe/`:** Contains the entire unmodified Hewitt & Manning codebase (see section 1).
+    -   **`legacy/structural_probe/`:** Contains the (slightly modified) Hewitt & Manning codebase (see section 1).
     -   **`torch_probe/`:** *(To be created)* Intended for the new PyTorch (v2.x) re-implementation of the structural probe.
     -   **`common/`:** *(To be created)* For shared utilities (e.g., PTB parsing, metrics, modern config loading) used by new experiments.
 -   **`env/`:**
-    -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`.
+    -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`. Includes prepared sample data.
     -   *(Future: `Dockerfile.cuda` for modern LLM experiments on remote GPUs).*
 -   **`scripts/`:**
     -   **`check_legacy_env.sh`:** Health check script for the `probe:legacy_pt_cpu` Docker container.
     -   **`run_legacy_probe.sh`:** Wrapper script to execute `run_experiment.py` from the legacy code within its Docker container.
-    -   *(Future: Scripts for data preprocessing, running new experiments, etc.)*
--   **`data/`:** *(To be created/populated)* For storing datasets like PTB, processed versions, and generated embeddings.
+    -   **`create_conllu_sample.py`:** Script to generate small sample CoNLLU files from full UD EWT data.
+    -   **`convert_sample_conllu_to_raw.py`:** Script to convert sample CoNLLU to raw text for ELMo input.
+    -   **`generate_elmo_embeddings_for_sample.sh`:** Script to generate ELMo HDF5 embeddings for the sample data using AllenNLP in Docker.
+    -   *(Future: Scripts for PTB preprocessing, running new experiments, etc.)*
+-   **`data_staging/`:** (Gitignored) Local staging area for downloading full datasets and preparing sample data before it's copied into Docker images or processed.
+    -   `ud_ewt_full/`: For downloaded full UD EWT CoNLLU files.
+    -   `my_ewt_sample_for_legacy_probe/`: Contains the prepared sample CoNLLU, TXT, and HDF5 files used by the legacy probe container.
+-   **`results_staging/`:** (Gitignored) Local directory for mounting and inspecting results generated by Docker container runs.
+-   **`data/`:** *(To be created/populated)* For storing primary datasets like PTB, processed versions, and generated embeddings intended for direct project use.
 -   **`tests/`:** *(To be created)* For unit tests, integration tests, and smoke tests.
 -   **`paper/`:** *(To be created)* For LaTeX source, figures, and bibliography for any publications.
 -   **`notebooks/`:** *(To be created, optional)* For exploratory data analysis (EDA) and plotting.
--   **`results/`:** *(To be created, gitignored)* For storing outputs of experiments (logs, metrics, saved models/probes).
 
 ## 3. Documentation (`docs/`)
 

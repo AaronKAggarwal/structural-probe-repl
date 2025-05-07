@@ -1,6 +1,6 @@
 # Master Documentation Index
 
-Last updated: 2025-05-06
+Last updated: 2025-05-07
 
 | Document Title              | Path                               | Purpose                                                                             | Update Rule                                            |
 |-----------------------------|------------------------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------|
@@ -9,7 +9,7 @@ Last updated: 2025-05-06
 | Dependency Notes            | `docs/DEPENDENCIES.md`             | Details on key dependencies, version pins, and rationale across environments.       | When significant pins change or new constraints arise. |
 | Frozen Native Requirements  | `requirements-mps.txt`             | Exact native macOS dependencies exported via `poetry export`.                       | Regenerate after any `poetry add/remove/update`.       |
 | Repository Architecture     | `docs/ARCHITECTURE.md`             | Overview of project directory structure, legacy code, and new components.           | When major code modules or directories are added/changed. |
-| Legacy CPU Dockerfile       | `env/Dockerfile.legacy_pt_cpu`     | Builds Py3.7 + PyTorch 1.3 CPU image for original Hewitt & Manning code.              | Update when base image or key dependencies change.     |
+| Legacy CPU Dockerfile       | `env/Dockerfile.legacy_pt_cpu`     | Builds Py3.7 + PyTorch 1.3 CPU image for original H&M code.              | Update when base image or key dependencies change.     |
 | Legacy Env Health Check     | `scripts/check_legacy_env.sh`      | Verifies critical dependencies inside the `probe:legacy_pt_cpu` container.          | Update if new critical dependencies are added/pinned.    |
 | Legacy Probe Runner         | `scripts/run_legacy_probe.sh`      | Wrapper script to execute H&M's `run_experiment.py` in the container.               | Update if argument passing or target script changes.   |
 | Build/Debug History         | `docs/HISTORY.md`                  | Chronological log of significant build/debug milestones & resolutions.              | Append after each significant debugging session/fix.     |

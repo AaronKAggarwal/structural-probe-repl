@@ -24,4 +24,8 @@ This document tracks significant milestones, challenges, and resolutions encount
 | May 06      | Docker Build (`COPY` Comment/Path Errors) | Series of `COPY` failures (`/CHANGED` not found, nested `.git`, `lstat /#:`)                 | Cleaned comments on `COPY` lines. Added `src/legacy/structural_probe/.git` to `.dockerignore`. Rebuilt successfully.                                   |
 | May 06      | **Legacy Container Operational (Env)**| Docker image `probe:legacy_pt_cpu` builds. Health check passes. `run_experiment.py` starts.  | Fails on `FileNotFoundError` for HDF5 data (e.g., `en_ewt-ud-train.elmo-layers.hdf5`) due to dead `download_example.sh` URLs. Plan to create sample data. |
 
+| May 07      | ELMo HDF5 Generation                  | Original H&M `download_example.sh` URLs dead. Sample data needed for legacy probe example.    | Created scripts to sample UD EWT CoNLLU, convert to raw text, generate ELMo HDF5s using AllenNLP 0.9.0 in `probe:legacy_pt_cpu` container. HDF5s generated. |
+| May 07      | Legacy Container (Data Load Error)    | `AssertionError` in `data.py` due to token count mismatch (CoNLLU MWTs vs ELMo).            | Modified `load_conll_dataset` in H&M's `data.py` to filter MWT lines, aligning token counts. Rebuilt image with copied sample data.                            |
+| May 07      | **Phase 0a: Legacy Probe Example Run**| Container `probe:legacy_pt_cpu` successfully ran H&M `run_experiment.py` on sample data.      | Produced plausible UUAS (~0.26) and Spearman Rho (~0.42 for distance; ~0.16 for depth) on dev set. **Phase 0a primary goal achieved.**       
+
 (This history will be appended as the project progresses.)

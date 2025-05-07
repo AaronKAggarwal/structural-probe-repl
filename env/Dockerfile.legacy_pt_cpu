@@ -29,16 +29,19 @@ RUN pip install --no-cache-dir --upgrade pip && \
     # AllenNLP 0.9.0
     allennlp==0.9.0 \
     # Specific pins based on previous research and LLM findings
-    numpy==1.19.5        
+    numpy==1.19.5 \
     # Compatible with PT 1.1 and AllenNLP 0.9.0
-    scipy==1.5.4          
+    scipy==1.5.4 \
     # Compatible
     scikit-learn==0.23.2 \
     nltk==3.5 \
     protobuf==3.20.1 \
-    tqdm==4.47.0          `# For Py3.7 compatibility` \
+    tqdm==4.47.0 \
+    # For Py3.7 compatibility
     pytorch-pretrained-bert==0.6.2 \
     PyYAML==3.13 \
+    overrides==3.1.0 \
+    typing-extensions==3.7.4 \
     # Requirements from Hewitt & Manning's requirements.txt (some are covered above)
     Cython \
     seaborn \
@@ -50,6 +53,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 #    Since WORKDIR is now /app/structural_probe_original, and we want the code
 #    to be *at* this location, we copy to '.' (current WORKDIR).
 COPY src/legacy/structural_probe/. .
+
+# 6.1. COPY the locally prepared sample data (CoNLLU, TXT, and HDF5 files)
+# This will overlay/add files into the /app/structural_probe_original/example/data/en_ewt-ud-sample/ directory
+COPY data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample /app/structural_probe_original/example/data/en_ewt-ud-sample/
 
 # 7. Copy helper scripts into a known location, e.g., /scripts_project_level
 #    Or, keep them relative to the new WORKDIR if that makes sense.
