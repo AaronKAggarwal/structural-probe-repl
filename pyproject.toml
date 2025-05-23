@@ -16,6 +16,15 @@ dependencies = [
     "numpy (>=1.26.4,<2.0.0)"
 ]
 
+[tool.poetry]
+name = "structural_probe_repl"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+packages = [
+    { include = "torch_probe", from = "src" },
+    # Add other packages from src if you have them
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -23,3 +32,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+
+
+
