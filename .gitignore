@@ -28,10 +28,11 @@ MANIFEST
 # --- Virtual Environments ---
 .env
 .venv
-env/      # Careful: We *do* version control env/Dockerfile.* but ignore the rest
-!env/Dockerfile*
+env/*                 # ignore everything under env …
+!env/                 # …but allow the directory itself
+!env/Dockerfile.legacy_pt_cpu   # …and keep this single file
 venv/
-ENV/
+\ENV/
 env.bak/
 venv.bak/
 
@@ -97,3 +98,12 @@ src/legacy/structural_probe/example/results/
 # (Add any files containing secrets, keys, passwords here - none expected for this project)
 # credentials.yaml
 # *.env
+
+
+# ---  Old Backups ---
+*.bak
+*.old
+*.backup
+*.save
+*.tmp
+*.temp

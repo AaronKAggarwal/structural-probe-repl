@@ -56,7 +56,7 @@ COPY src/legacy/structural_probe/. .
 
 # 6.1. COPY the locally prepared sample data (CoNLLU, TXT, and HDF5 files)
 # This will overlay/add files into the /app/structural_probe_original/example/data/en_ewt-ud-sample/ directory
-COPY data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample /app/structural_probe_original/example/data/en_ewt-ud-sample/
+# COPY data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample /app/structural_probe_original/example/data/en_ewt-ud-sample/
 
 # 7. Copy helper scripts into a known location, e.g., /scripts_project_level
 #    Or, keep them relative to the new WORKDIR if that makes sense.

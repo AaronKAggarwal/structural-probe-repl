@@ -1,62 +1,78 @@
 #!/bin/bash
 set -e
 
-echo "--- Running Legacy Probe ---"
+echo "--- Running Legacy Probe/Demo ---"
 echo "Current PWD before any operations: $(pwd)" # Should be /app/structural_probe_original
 
-# Initialize CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR
+# Initialize variables
 CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR=""
+PYTHON_SCRIPT_TO_RUN="structural-probes/run_experiment.py" # Default to experiment runner
+SEED_FOR_EXPERIMENT=1 # Define the seed to use for run_experiment.py
 
-# This script will be called by the ENTRYPOINT (check_legacy_env.sh), 
-# and the arguments to this script will be the CMD from the Dockerfile.
-# Example Dockerfile CMD: ["/scripts/run_legacy_probe.sh", "example/config/prd_en_ewt-ud-sample.yaml"]
-# So, $1 will be "example/config/prd_en_ewt-ud-sample.yaml"
-
+# Argument parsing to determine config file and which python script to run
 if [ "$#" -eq 0 ]; then
-    # No arguments passed directly to run_legacy_probe.sh when docker run is invoked without overriding CMD
-    # This case might not be hit if Dockerfile CMD always provides an argument.
-    # But as a fallback, use a default.
-    echo "No arguments passed to run_legacy_probe.sh, using default example config."
+    # No arguments passed directly, use default for run_experiment.py
+    echo "No arguments passed, using default example config for run_experiment.py with seed ${SEED_FOR_EXPERIMENT}."
     CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR="example/config/prd_en_ewt-ud-sample.yaml"
+    PYTHON_SCRIPT_TO_RUN="structural-probes/run_experiment.py"
+elif [ "$1" == "example/demo-bert.yaml" ]; then
+    # Specific check if the first argument IS the demo config
+    echo "Config 'example/demo-bert.yaml' detected. Switching to run_demo.py."
+    CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR="$1"
+    PYTHON_SCRIPT_TO_RUN="structural-probes/run_demo.py"
 elif [ "$1" == "--config_file" ] && [ -n "$2" ]; then
-    # Handle if user explicitly uses --config_file flag with docker run
-    # e.g., docker run ... probe:legacy_pt_cpu /scripts/run_legacy_probe.sh --config_file path/to/config.yaml
+    # Handle explicit --config_file flag
     echo "Received --config_file flag, using provided path: $2"
     CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR="$2"
+    if [ "$2" == "example/demo-bert.yaml" ]; then
+        echo "'example/demo-bert.yaml' (via --config_file) detected. Switching to run_demo.py."
+        PYTHON_SCRIPT_TO_RUN="structural-probes/run_demo.py"
+    else
+        echo "Using run_experiment.py with seed ${SEED_FOR_EXPERIMENT}."
+        PYTHON_SCRIPT_TO_RUN="structural-probes/run_experiment.py"
+    fi
 else
-    # Assume the first argument is the config file path (relative to WORKDIR)
-    # This is the case for the default Dockerfile CMD
-    echo "Assuming first argument ('$1') is the config file path (relative to WORKDIR)."
+    # Assume the first argument is the config file path.
+    echo "Assuming first argument ('$1') is the config file path."
     CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR="$1"
+    if [ "$1" == "example/demo-bert.yaml" ]; then
+        echo "'example/demo-bert.yaml' detected as first arg. Switching to run_demo.py."
+        PYTHON_SCRIPT_TO_RUN="structural-probes/run_demo.py"
+    else
+        echo "Using run_experiment.py with seed ${SEED_FOR_EXPERIMENT}."
+        PYTHON_SCRIPT_TO_RUN="structural-probes/run_experiment.py"
+    fi
 fi
 
+# Validate that a config file path was determined
 if [ -z "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR" ]; then
-    echo "ERROR: Config file path could not be determined."
+    echo "ERROR: Config file path could not be determined from arguments: $@"
     exit 1
 fi
 
-# The path is now relative to WORKDIR (/app/structural_probe_original)
-# No need to prepend /app/ or anything, as WORKDIR is already set.
-# The python script itself is also relative to WORKDIR.
-TARGET_PYTHON_SCRIPT="structural-probes/run_experiment.py"
-
-# Check if the config file exists relative to the current PWD (which should be WORKDIR)
+# Validate paths (relative to current PWD, which should be WORKDIR /app/structural_probe_original)
 if [ ! -f "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR" ]; then
     echo "ERROR: Config file not found at $(pwd)/${CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR}"
-    echo "Looking in directory: $(pwd)/$(dirname "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR")"
-    ls -l "$(pwd)/$(dirname "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR")"
     exit 1
 fi
 
-# Check if the target python script exists
-if [ ! -f "$TARGET_PYTHON_SCRIPT" ]; then
-    echo "ERROR: Target Python script not found at $(pwd)/${TARGET_PYTHON_SCRIPT}"
+if [ ! -f "$PYTHON_SCRIPT_TO_RUN" ]; then
+    echo "ERROR: Target Python script not found at $(pwd)/${PYTHON_SCRIPT_TO_RUN}"
     exit 1
 fi
 
+# Announce and run
 echo "Using config file: $(pwd)/${CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR}"
-echo "Running: python ${TARGET_PYTHON_SCRIPT} ${CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR}"
+echo "Target Python script: ${PYTHON_SCRIPT_TO_RUN}"
 
-python "$TARGET_PYTHON_SCRIPT" "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR"
+if [ "$PYTHON_SCRIPT_TO_RUN" == "structural-probes/run_experiment.py" ]; then
+    echo "Executing: python ${PYTHON_SCRIPT_TO_RUN} ${CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR} --seed ${SEED_FOR_EXPERIMENT}"
+    python "$PYTHON_SCRIPT_TO_RUN" "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR" --seed "${SEED_FOR_EXPERIMENT}"
+else
+    # run_demo.py expects stdin for sentences if not given a file argument for sentences
+    echo "Executing: python ${PYTHON_SCRIPT_TO_RUN} ${CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR}"
+    echo "Piping stdin to ${PYTHON_SCRIPT_TO_RUN} if applicable..."
+    python "$PYTHON_SCRIPT_TO_RUN" "$CONFIG_FILE_PATH_RELATIVE_TO_WORKDIR"
+fi
 
-echo "--- Legacy Probe Run Finished ---"
+echo "--- Legacy Probe/Demo Run Finished ---"

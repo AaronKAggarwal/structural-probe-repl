@@ -118,60 +118,16 @@ class SimpleDataset:
     Returns:
       A list of Observations 
     '''
-    
     observations = []
     lines = (x for x in open(filepath))
     for buf in self.generate_lines_for_sent(lines):
       conllx_lines = []
-      sentence_tokens = [] # Store only actual tokens
       for line in buf:
-        parts = line.strip().split('\t')
-        if len(parts) > 1 and parts[0].isdigit(): # Only process lines with integer IDs (ignore MWT lines like '19-20')
-             conllx_lines.append(parts) # Store all columns for potential use
-             sentence_tokens.append(parts[1]) # Store only the word form (parts[1]) for len check
-             
-      # Now len(sentence_tokens) should be 35 for sentence 8
-      
-      if not sentence_tokens: # Skip if sentence was empty after filtering
-          continue
-          
-      # Create observation using *all* columns from valid lines
-      # Note: The structure of observation_class needs to match the number of columns yielded by zip
-      # If observation_class expects fields based on ALL original columns including MWT, this needs care.
-      # Assuming observation_class fields match columns 1 to N of the CONLLU standard *excluding* MWT lines:
-      embeddings = [None for x in range(len(sentence_tokens))] # Match length of actual tokens
-      
-      # We need to be careful how observation_class is defined and what zip(*conllx_lines) yields
-      # Let's recreate the observation more carefully
-      field_values = [[] for _ in self.observation_class._fields[:-1]] # Exclude the 'embeddings' field name
-      for parts in conllx_lines: # conllx_lines now only has token lines
-          for i, field_val in enumerate(parts):
-              if i < len(field_values): # Avoid index error if CoNLLU has more cols than expected fields
-                  field_values[i].append(field_val)
-                  
-      # Convert lists of values for each field into tuples
-      field_tuples = [tuple(vals) for vals in field_values]
-      
-      # Check if number of field tuples matches expected fields (excluding embeddings)
-      if len(field_tuples) != len(self.observation_class._fields) - 1:
-            print(f"WARNING: Column count mismatch for sentence. Expected {len(self.observation_class._fields) - 1} fields, got {len(field_tuples)}. Skipping.")
-            # You might need to debug the field names vs conllu columns here if this happens
-            continue
-
-      # Ensure the 'sentence' field (assuming it's field index 1) matches sentence_tokens length
-      if self.observation_class._fields[1] == 'sentence': # Adjust index if 'sentence' is not field 1
-          if len(field_tuples[1]) != len(sentence_tokens):
-              print(f"WARNING: Internal length mismatch for sentence tokens. Skipping.")
-              continue
-          # Use the explicitly filtered sentence_tokens tuple for consistency if needed, 
-          # though field_tuples[1] should be identical now.
-          # field_tuples[1] = tuple(sentence_tokens) # Probably redundant if logic above is correct
-
-      observation = self.observation_class(*field_tuples, tuple(embeddings)) # Add empty embeddings tuple
-            
+        conllx_lines.append(line.strip().split('\t'))
+      embeddings = [None for x in range(len(conllx_lines))]
+      observation = self.observation_class(*zip(*conllx_lines), embeddings)
       observations.append(observation)
     return observations
-
 
   def add_embeddings_to_observations(self, observations, embeddings):
     '''Adds pre-computed embeddings to Observations.
@@ -188,9 +144,6 @@ class SimpleDataset:
       embedded_observation = self.observation_class(*(observation[:-1]), embedding)
       embedded_observations.append(embedded_observation)
     return embedded_observations
-
-# In class SimpleDataset (or ELMoDataset if it overrides this method, 
-# but based on the traceback it's likely in SimpleDataset or a common base)
 
   def generate_token_embeddings_from_hdf5(self, args, observations, filepath, layer_index):
     '''Reads pre-computed embeddings from ELMo-like hdf5-formatted file.
@@ -212,48 +165,17 @@ class SimpleDataset:
     Raises:
       AssertionError: sent_length of embedding was not the length of the
         corresponding sentence in the dataset.
-      ValueError: If HDF5 content is missing or malformed for a sentence index.
     '''
     hf = h5py.File(filepath, 'r') 
-    indices_in_file = list(hf.keys())
-    valid_indices_str = [x for x in indices_in_file if x != 'sentence_to_index']
-    
+    indices = filter(lambda x: x != 'sentence_to_index', list(hf.keys()))
     single_layer_features_list = []
-    
-    for index_int in sorted([int(x) for x in valid_indices_str]): 
-      if index_int >= len(observations):
-          print(f"WARNING: HDF5 index {index_int} is out of bounds for observations list (len: {len(observations)}). Skipping.")
-          continue
-
-      observation = observations[index_int]
-      idx_str = str(index_int) 
-
-      if idx_str not in hf:
-          print(f"WARNING: Index {idx_str} not found in HDF5 file {filepath}. Skipping.")
-          continue
-          
-      feature_stack = hf[idx_str][()] 
-      
-      # Check if feature_stack has enough layers and dimensions
-      if feature_stack.ndim < 3 or layer_index >= feature_stack.shape[0]: 
-          print(f"ERROR: Invalid layer_index ({layer_index}) or feature_stack shape ({feature_stack.shape}) for HDF5 key {idx_str}.")
-          raise ValueError(f"Invalid layer_index or feature_stack shape for sentence {idx_str}")
-
-      # Select the specified layer
-      single_layer_features = feature_stack[layer_index] 
-      
-      # Assertion: Check token count alignment
-      assert single_layer_features.shape[0] == len(observation.sentence), \
-          f"Token count mismatch for sentence key {idx_str}: " \
-          f"ELMo count={single_layer_features.shape[0]}, " \
-          f"CoNLLU count={len(observation.sentence)}. " \
-          f"CoNLLU sentence: {' '.join(observation.sentence)}"
-            
+    for index in sorted([int(x) for x in indices]):
+      observation = observations[index]
+      feature_stack = hf[str(index)]
+      single_layer_features = feature_stack[layer_index]
+      assert single_layer_features.shape[0] == len(observation.sentence)
       single_layer_features_list.append(single_layer_features)
-      
-    hf.close()
     return single_layer_features_list
-  
 
   def integerize_observations(self, observations):
     '''Replaces strings in an Observation with integer Ids.
@@ -513,4 +435,3 @@ class ObservationIterator(Dataset):
 
   def __getitem__(self, idx):
     return self.observations[idx], self.labels[idx]
-
