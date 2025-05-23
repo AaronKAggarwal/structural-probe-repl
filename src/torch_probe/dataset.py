@@ -136,7 +136,7 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     Pads embedding sequences and gold labels.
     """
 
-    if not batch: # <<< IS THIS DEFINITELY THE FIRST EXECUTABLE LINE?
+    if not batch:
         return {
             "embeddings_batch": torch.empty(0),
             "labels_batch": torch.empty(0),
