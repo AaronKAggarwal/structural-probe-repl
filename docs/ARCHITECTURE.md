@@ -37,7 +37,13 @@ This directory contains a copy of the original codebase from `john-hewitt/struct
     -   `gold_labels.py`: Computes gold standard tree depths and pairwise distances from head index information.
     -   `embedding_loader.py`: Provides functions to efficiently load sentence-specific pre-computed embeddings (e.g., ELMo) from HDF5 files, allowing for layer selection.
     -   `dataset.py`: Contains the `ProbeDataset` PyTorch `Dataset` class for loading CoNLL-U parses and corresponding embeddings, and the custom `collate_probe_batch` function for padding and batching variable-length sequences.
-    -   *(Future: `probe_models.py`, `loss_functions.py`, `train_utils.py`, `evaluate.py`)*
+    -   `probe_models.py` (New for MS1.2): Defines the PyTorch `nn.Module` classes for the structural probes:
+    -   `DistanceProbe`: Implements the linear transformation and calculates squared L2 distances between projected embedding pairs.
+    -   `DepthProbe`: Implements the linear transformation and calculates the squared L2 norm of projected embeddings.
+    -   `loss_functions.py` (New for MS1.2): Provides custom L1 loss functions tailored for the probing tasks:
+    -   `distance_l1_loss`: Calculates L1 loss on squared distances, correctly handling padding and considering unique pairs.
+    -   `depth_l1_loss`: Calculates L1 loss on squared depths, correctly handling padding.
+    -   *(Future: `train_utils.py`, `evaluate.py`)*        
     -   **`common/`:** *(To be created)* ...
 -   **`env/`:**
     -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`. Includes prepared sample data.

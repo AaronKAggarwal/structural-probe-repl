@@ -35,4 +35,8 @@ This document tracks significant milestones, challenges, and resolutions encount
 
 | May 23      | **Phase 1, Milestone 1.1: PyTorch Dataset & DataLoader (Modern Probe)** | `ModuleNotFoundError` for `torch_probe` when running pytest initially. HDF5 shape mismatch in independent tests. Empty batch handling in `collate_fn`. `head_indices` mismatch in independent tests. | Fixed `pyproject.toml` for Poetry to find `src` packages. Corrected HDF5 dummy data generation in independent tests. Added empty batch guard to `collate_fn`. Corrected head index assertion in independent tests. |
 
+| May 23      | **Phase 1, Milestone 1.2: Probe Model & Loss Implementation**          | `NameError: Optional not defined` in `loss_functions.py`. `fixture 'self' not found` in tests.  | Imported `Optional` from `typing`. Removed `self` from standalone test functions.                                                                                                       |
+| May 23      |                                                                        | -                                                                                               | Implemented `DistanceProbe` & `DepthProbe` in `probe_models.py`. Implemented L1 loss functions in `loss_functions.py`. All unit tests passing. **Milestone 1.2 COMPLETE.** |
+
+
 (This history will be appended as the project progresses.)
