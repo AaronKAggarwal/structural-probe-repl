@@ -49,6 +49,9 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# --- Planning ---
+docs/MILESTONE_*
+
 # --- Testing / Coverage ---
 .pytest_cache/
 .coverage
