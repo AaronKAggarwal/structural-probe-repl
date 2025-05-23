@@ -14,3 +14,12 @@ and subsequent extensions on modern language models.
     *   Legacy code successfully runs an example experiment (parse-distance and parse-depth probes) end-to-end on the prepared sample data within the container, producing plausible metrics (UUAS, Spearman rho, Root Accuracy).
     *   Key issues encountered (dead download links, dependency conflicts, CoNLLU MWT handling, Docker build quirks) have been resolved and documented.
 *   **Next Step:** Phase 1 - Modern PyTorch Probe Re-implementation.
+
+## Current Status (as of 2025-05-23)
+# ...
+*   **Phase 0a: Legacy Hewitt & Manning Probe Replication (PyTorch 1.x CPU): COMPLETE** 
+      * ... (details as before) ...
+*   **Phase 1: Modern PyTorch Probe Re-implementation - IN PROGRESS**
+    *   **Milestone 1.0 (Basic Data Handling Utilities): COMPLETE.** CoNLL-U reader and gold label (depth/distance) calculation utilities implemented and unit tested.
+    *   **Milestone 1.1 (PyTorch Dataset & DataLoader): COMPLETE.** `ProbeDataset` and `collate_fn` implemented and unit tested for loading CoNLL-U parses and pre-computed ELMo embeddings.
+*   **Next Step:** Phase 1, Milestone 1.2 - Implementation of modern probe models and loss functions.

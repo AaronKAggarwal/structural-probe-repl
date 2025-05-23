@@ -30,12 +30,15 @@ This directory contains a copy of the original codebase from `john-hewitt/struct
 ## 2. Current Project Scaffold (`structural-probe-repl/`)
 
 -   **`src/`:**
-    -   **`legacy/structural_probe/`:** Contains the (slightly modified) Hewitt & Manning codebase (see section 1).
-    -   **`torch_probe/`:** *(To be created)* Intended for the new PyTorch (v2.x) re-implementation of the structural probe.
-    -   **`common/`:** *(To be created)* For shared utilities (e.g., PTB parsing, metrics, modern config loading) used by new experiments.
-    -   **`torch_probe/utils/`:** Contains utility modules for the modern probe.
+    -   **`legacy/structural_probe/`:** Contains the (slightly modified) Hewitt & Manning codebase...
+    -   **`torch_probe/`:** Houses the modern PyTorch (v2.x) re-implementation of the structural probe.
+    -   `utils/`: Contains utility modules for the modern probe.
     -   `conllu_reader.py`: Parses CoNLL-U files, extracts tokens, head indices, and other annotations, correctly handling multi-word tokens.
     -   `gold_labels.py`: Computes gold standard tree depths and pairwise distances from head index information.
+    -   `embedding_loader.py`: Provides functions to efficiently load sentence-specific pre-computed embeddings (e.g., ELMo) from HDF5 files, allowing for layer selection.
+    -   `dataset.py`: Contains the `ProbeDataset` PyTorch `Dataset` class for loading CoNLL-U parses and corresponding embeddings, and the custom `collate_probe_batch` function for padding and batching variable-length sequences.
+    -   *(Future: `probe_models.py`, `loss_functions.py`, `train_utils.py`, `evaluate.py`)*
+    -   **`common/`:** *(To be created)* ...
 -   **`env/`:**
     -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`. Includes prepared sample data.
     -   *(Future: `Dockerfile.cuda` for modern LLM experiments on remote GPUs).*
