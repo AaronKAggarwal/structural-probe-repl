@@ -31,5 +31,5 @@ This document tracks significant milestones, challenges, and resolutions encount
 | May 23      | Legacy BERT Demo Setup                | `run_legacy_probe.sh` was only calling `run_experiment.py`.                                   | Modified `run_legacy_probe.sh` to detect `demo-bert.yaml` and call `run_demo.py` instead. Rebuilt.                                                      |
 | May 23      | **Legacy BERT Demo Run (whykay-01 Data)**| Ran BERT demo with `whykay-01` `.params` files.                                             | **Success!** Demo ran, loaded pre-trained probes, processed input, produced visualizations.                                                             |
 | May 23      | **Phase 0a: Legacy Setup & Verification** | All H&M examples (ELMo training, BERT demo) now functional using data from `whykay-01` fork. | **COMPLETE.** Ready for Phase 1.                                                                                                                      |
-
+| May 23      | **Phase 1, Milestone 1.0: Basic Data Handling Setup**| -                            | Created dir structure for `src/torch_probe`. Implemented `conllu_reader.py` and `gold_labels.py` with unit tests. All tests passing. Basic utilities ready. |
 (This history will be appended as the project progresses.)
