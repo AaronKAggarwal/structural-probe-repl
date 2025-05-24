@@ -104,6 +104,9 @@ class ProbeDataset(Dataset):
                 f"Sentence: {' '.join(sentence_data['tokens'])}"
             )
         
+        if 'upos_tags' not in sentence_data:
+             raise ValueError(f"Sentence data for index {idx} is missing 'upos_tags'. Check conllu_reader.")
+
         # Convert to PyTorch Tensors
         embeddings_tensor = torch.from_numpy(embeddings_np).float()
         gold_labels_tensor = torch.from_numpy(self.gold_labels[idx]).float()
@@ -113,6 +116,7 @@ class ProbeDataset(Dataset):
             "gold_labels": gold_labels_tensor,
             "tokens": sentence_data['tokens'], # List of str
             "head_indices": sentence_data['head_indices'], # List of int
+            "upos_tags": sentence_data['upos_tags'], # List of str
             "length": num_tokens_conllu # Original length
         }
 
@@ -142,7 +146,8 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
             "labels_batch": torch.empty(0),
             "lengths_batch": torch.empty(0, dtype=torch.long),
             "tokens_batch": [],
-            "head_indices_batch": []
+            "head_indices_batch": [],
+            "upos_tags_batch": []
         }
 
     embeddings_list = [item['embeddings'] for item in batch]
@@ -176,13 +181,14 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     # These are useful for inspection or if specific evaluation needs them.
     tokens_batch = [item['tokens'] for item in batch]
     head_indices_batch = [item['head_indices'] for item in batch]
-
+    upos_tags_batch = [item['upos_tags'] for item in batch]
     return {
         "embeddings_batch": padded_embeddings,
         "labels_batch": padded_labels,
         "lengths_batch": lengths,
         "tokens_batch": tokens_batch, # For debug/analysis
-        "head_indices_batch": head_indices_batch # For debug/analysis
+        "head_indices_batch": head_indices_batch, # For debug/analysis
+        "upos_tags_batch": upos_tags_batch # For debug/analysis
     }
 
 if __name__ == '__main__':

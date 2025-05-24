@@ -87,18 +87,22 @@ def test_depth_l1_loss_simple():
 
 def test_distance_l1_loss_simple():
     # One sentence length 3
-    pred = torch.tensor([[[0.0, 1.0, 4.0],
+    pred = torch.tensor([[[0.0, 1.0, 4.0],  # Predicted SQUARED L2
                           [1.0, 0.0, 1.0],
                           [4.0, 1.0, 0.0]]])
-    gold = torch.tensor([[[0.0, 1.0, 5.0],
+    gold = torch.tensor([[[0.0, 1.0, 5.0],  # Gold NON-SQUARED
                           [1.0, 0.0, 1.0],
                           [5.0, 1.0, 0.0]]])
     lengths = torch.tensor([3])
 
-    # valid pairs: (0,1),(0,2),(1,2)
-    expected = (0 + 1 + 0) / 3  # 0.3333
+    # H&M style normalization: sum over all LxL pairs, then divide by L^2
+    # abs_diff_matrix = [[0,0,1],[0,0,0],[1,0,0]] (from pred - gold)
+    # sum_abs_diff_full_matrix = 0+0+1 + 0+0+0 + 1+0+0 = 2
+    # L=3, L^2=9
+    expected = 2.0 / 9.0  # Approximately 0.2222...
+    
     loss = distance_l1_loss(pred, gold, lengths)
-    assert math.isclose(loss.item(), expected, rel_tol=1e-4)
+    assert math.isclose(loss.item(), expected, rel_tol=1e-4) # math.isclose might need import
 
 
 def test_distance_loss_zero_when_no_pairs():

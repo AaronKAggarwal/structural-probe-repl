@@ -1,6 +1,6 @@
 # Build / Debug History (structural-probe-repl)
 
-Last updated: 2025-05-23
+Last updated: 2025-05-24
 
 This document tracks significant milestones, challenges, and resolutions encountered during the setup and development of the project environments, particularly for the legacy probe replication.
 
@@ -38,5 +38,10 @@ This document tracks significant milestones, challenges, and resolutions encount
 | May 23      | **Phase 1, Milestone 1.2: Probe Model & Loss Implementation**          | `NameError: Optional not defined` in `loss_functions.py`. `fixture 'self' not found` in tests.  | Imported `Optional` from `typing`. Removed `self` from standalone test functions.                                                                                                       |
 | May 23      |                                                                        | -                                                                                               | Implemented `DistanceProbe` & `DepthProbe` in `probe_models.py`. Implemented L1 loss functions in `loss_functions.py`. All unit tests passing. **Milestone 1.2 COMPLETE.** |
 
+| ...         | **Phase 1, Milestone 1.2: Probe Model & Loss Implementation**          | `NameError`, `fixture 'self'` errors in tests. Independent loss test normalization mismatch.  | Imported `Optional`. Removed `self` from test fns. Corrected independent loss test. **MS1.2 COMPLETE.** All model/loss tests pass (123 total).                                                              |
+| May 24      | **Phase 1, MS1.3 (Partial): Evaluation & Train Utilities**               | Punctuation filtering for UUAS/RootAcc. `NameError` & `IndentationError` in `evaluate.py`. Spearman test logic. | Implemented `evaluate.py` with metric calcs (Spearman, UUAS, RootAcc) including punct filtering. Implemented `train_utils.py` (optimizer, early stopping, checkpointing). Unit tests added. |
+| May 24      |                                                                        | `test_spearmanr_depth_with_padding` failure due to incorrect slicing in `calculate_spearmanr`.    | Corrected slicing logic within `calculate_spearmanr` for direct unit test calls. **All 128 tests for MS1.0-MS1.3 (utils) now passing.**                                                 |
+
+(This history will be appended as the project progresses.)
 
 (This history will be appended as the project progresses.)
