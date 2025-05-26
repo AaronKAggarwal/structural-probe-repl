@@ -1,80 +1,103 @@
 # Repository Architecture
 
-Last updated: 2025-05-07
+Last updated: 2025-05-26
 
-This document explains the layout of both the original Hewitt & Manning structural probe code (vendored into this project) and the new project structure.
+This document explains the layout of the `structural-probe-repl` project, covering the vendored original Hewitt & Manning (2019) codebase and the new, modern PyTorch implementation.
 
-## 1. Original Hewitt & Manning Code (`src/legacy/structural_probe`)
+## 1. Original Hewitt & Manning Code (Vendored)
 
-This directory contains a copy of the original codebase from `john-hewitt/structural-probes`. It is PyTorch-based (approx. v1.0-1.3).
+*   **Location:** `src/legacy/structural_probe/`
+*   **Description:** A direct copy of the original codebase from `john-hewitt/structural-probes` (GitHub). This code is PyTorch-based (approx. v1.0-1.3). It was used in Phase 0a to verify the original probing pipeline.
+*   **Key Subdirectories & Files:**
+    *   **`README.md` / `LICENSE`:** Original project's overview and license.
+    *   **`doc-assets/`:** Figures used in the original H&M README/paper.
+    *   **`download_example.sh`:** Original script to fetch sample data. (Note: URLs are dead; data was sourced from the `whykay-01` fork for Phase 0a).
+    *   **`example/`:**
+        *   `config/`: YAML configurations for H&M's experiments (e.g., `prd_en_ewt-ud-sample.yaml`, PTB configs in `naacl19/`).
+        *   `data/`: Contains the EWT sample data (`en_ewt-ud-sample/` subdirectory with `.conllu`, `.txt`, `.elmo-layers.hdf5` files) and pre-trained BERT probe parameters (`bertlarge16-*.params`), all sourced from the `whykay-01` fork.
+        *   `demo-bert.yaml`: Configuration for the BERT demo script.
+    *   **`requirements.txt`:** Original Python dependencies (excluding PyTorch, which was to be installed separately).
+    *   **`scripts/`:** Original data preparation utilities (e.g., `convert_conll_to_raw.py`, `convert_raw_to_elmo.sh`, `convert_raw_to_bert.py`).
+    *   **`structural-probes/`:** The core Python modules of the H&M probe:
+        *   `data.py`: Data loading (CoNLLU, HDF5). The version used in our Phase 0a runs is the original H&M version.
+        *   `model.py`: Model definition (mainly for pre-computed embeddings).
+        *   `probe.py`: Probe `nn.Module` definitions.
+        *   `loss.py`: Loss function definitions.
+        *   `regimen.py`: Training loop logic.
+        *   `reporter.py`: Evaluation metric calculation and reporting.
+        *   `task.py`: Defines linguistic tasks (distance, depth) and gold label extraction.
+        *   `run_experiment.py`, `run_demo.py`: Main scripts for training and demos.
 
--   **README.md / LICENSE:** Original project's overview and license.
--   **doc-assets/:** Figures (PNG) used in the original paper/README.
--   **download_example.sh:** Script to fetch a small sample of the English EWT Universal Dependencies corpus and pre-trained probe parameters. **Note: The URLs in this script are currently dead (404). This script is NOT used in the current Docker build.**
--   **example/:**
-    -   **config/:** YAML configuration files for experiments on various models (e.g., ELMo, BERT-base) and tasks (parse-distance `prd`, parse-depth `pad`). Includes subdirectories like `naacl19/` for paper-specific configs.
-    -   **data/:** Original intended location for example datasets (e.g., `en_ewt-ud-sample/`) including `.conllu` files and pre-computed embeddings (e.g., `.elmo-layers.hdf5`). Our prepared sample data is now copied here during Docker build.
-    -   **demo-bert.yaml:** An end-to-end demo configuration, likely using pre-trained probe parameters (which are also from dead links).
--   **requirements.txt:** Python package dependencies for the original code (e.g., `Cython`, `seaborn`, `PyYAML`, `numpy`, `h5py`, `tqdm`). PyTorch itself and `pytorch-pretrained-bert` were to be installed separately according to their README.
--   **scripts/:** Original data preparation utilities:
-    -   `convert_conll_to_raw.py`
-    -   `convert_raw_to_bert.py`
-    -   `convert_raw_to_elmo.sh`
-    -   `convert_splits_to_depparse.sh` (uses Stanford CoreNLP)
--   **structural-probes/:** Core probe implementation and orchestration:
-    -   `probe.py`: Core structural probe logic.
-    -   `model.py`, `data.py`: Model loading, data handling (CoNLLU, HDF5 embeddings). **Note: `data.py` has been locally modified to correctly handle CoNLLU MWTs for token counting.**
-    -   `run_experiment.py`, `run_demo.py`: Main drivers for experiments and demos.
-    -   `loss.py`, `regimen.py`, `reporter.py`, `task.py`: Training loop, loss functions, reporting, and task definitions.
+## 2. Modern Probe Implementation & Project Scaffold
 
-## 2. Current Project Scaffold (`structural-probe-repl/`)
+This section details the structure of the current project, including the modern PyTorch re-implementation.
 
--   **`src/`:**
-    -   **`legacy/structural_probe/`:** Contains the (slightly modified) Hewitt & Manning codebase...
-    -   **`torch_probe/`:** Houses the modern PyTorch (v2.x) re-implementation of the structural probe.
-    -   `utils/`: Contains utility modules for the modern probe.
-    -   `conllu_reader.py`: Parses CoNLL-U files, extracts tokens, head indices, and other annotations, correctly handling multi-word tokens.
-    -   `gold_labels.py`: Computes gold standard tree depths and pairwise distances from head index information.
-    -   `embedding_loader.py`: Provides functions to efficiently load sentence-specific pre-computed embeddings (e.g., ELMo) from HDF5 files, allowing for layer selection.
-    -   `dataset.py`: Contains the `ProbeDataset` PyTorch `Dataset` class for loading CoNLL-U parses and corresponding embeddings, and the custom `collate_probe_batch` function for padding and batching variable-length sequences.
-    -   `probe_models.py` (New for MS1.2): Defines the PyTorch `nn.Module` classes for the structural probes:
-    -   `DistanceProbe`: Implements the linear transformation and calculates squared L2 distances between projected embedding pairs.
-    -   `DepthProbe`: Implements the linear transformation and calculates the squared L2 norm of projected embeddings.
-    -   `loss_functions.py` (New for MS1.2): Provides custom L1 loss functions tailored for the probing tasks:
-    -   `evaluate.py` (New for MS1.3): Contains functions for calculating evaluation metrics (Spearman correlation, UUAS, Root Accuracy), including logic for punctuation filtering to align with H&M methodology.
-    -   `train_utils.py` (New for MS1.3): Provides utility functions for the training process, such as optimizer instantiation, early stopping mechanisms, and model checkpointing (saving/loading).
-    -   `distance_l1_loss`: Calculates L1 loss on squared distances, correctly handling padding and considering unique pairs.
-    -   `depth_l1_loss`: Calculates L1 loss on squared depths, correctly handling padding.     
-    -   *(Future: Main training script will reside in `scripts/`)*
-    -   **`common/`:** *(To be created)* ...
--   **`env/`:**
-    -   **`Dockerfile.legacy_pt_cpu`:** Dockerfile to build an environment for running the original Hewitt & Manning code (Python 3.7, PyTorch 1.3.0+cpu, AllenNLP 0.9.0, etc.) on `linux/amd64`. Includes prepared sample data.
-    -   *(Future: `Dockerfile.cuda` for modern LLM experiments on remote GPUs).*
--   **`scripts/`:**
-    -   **`check_legacy_env.sh`:** Health check script for the `probe:legacy_pt_cpu` Docker container.
-    -   **`run_legacy_probe.sh`:** Wrapper script to execute `run_experiment.py` from the legacy code within its Docker container.
-    -   **`create_conllu_sample.py`:** Script to generate small sample CoNLLU files from full UD EWT data.
-    -   **`convert_sample_conllu_to_raw.py`:** Script to convert sample CoNLLU to raw text for ELMo input.
-    -   **`generate_elmo_embeddings_for_sample.sh`:** Script to generate ELMo HDF5 embeddings for the sample data using AllenNLP in Docker.
-    -   *(Future: Scripts for PTB preprocessing, running new experiments, etc.)*
--   **`data_staging/`:** (Gitignored) Local staging area for downloading full datasets and preparing sample data before it's copied into Docker images or processed.
-    -   `ud_ewt_full/`: For downloaded full UD EWT CoNLLU files.
-    -   `my_ewt_sample_for_legacy_probe/`: Contains the prepared sample CoNLLU, TXT, and HDF5 files used by the legacy probe container.
--   **`results_staging/`:** (Gitignored) Local directory for mounting and inspecting results generated by Docker container runs.
--   **`data/`:** *(To be created/populated)* For storing primary datasets like PTB, processed versions, and generated embeddings intended for direct project use.
--   **`tests/`:** *(To be created)* For unit tests, integration tests, and smoke tests.
--   **`paper/`:** *(To be created)* For LaTeX source, figures, and bibliography for any publications.
--   **`notebooks/`:** *(To be created, optional)* For exploratory data analysis (EDA) and plotting.
+*   **`configs/`**: Hydra configuration files for the modern probing framework.
+    *   `config.yaml`: Main default configuration.
+    *   `dataset/`: Configs defining different datasets (e.g., `elmo_ewt_sample_whykay01.yaml` pointing to vendored CoNLLU, `elmo_ewt_MY_sample.yaml` pointing to `data_staging` CoNLLU).
+    *   `embeddings/`: Configs defining different sources of pre-computed embeddings (e.g., `elmo_l2_whykay01.yaml` for vendored HDF5s, `elmo_l2_my_sample_modern_prep.yaml` for self-generated HDF5s).
+    *   `experiment/`: Composable experiment configurations (e.g., `elmo_ewt_dist_phase1_train.yaml`).
+    *   `probe/`: Configs for different probe types and hyperparameters (e.g., `distance_rank32.yaml`).
+    *   `training/`: Configs for training loop parameters (e.g., `default_adam.yaml`).
+    *   `evaluation/`: Configs for evaluation settings (less used currently).
 
-## 3. Documentation (`docs/`)
+*   **`data/`**: (Gitignored by default, intended for large primary datasets)
+    *   *(Planned)* Location for storing primary datasets like the full Penn Treebank (PTB) once acquired and processed.
 
-This directory houses all project documentation. Key files include:
--   `README.md` (Project root): Overall project summary and entry point.
--   `ENV_SETUP.md`: Instructions for setting up native macOS (MPS) and Dockerized (legacy CPU, future CUDA) environments.
--   `DEPENDENCIES.md`: Notes on key dependencies and version constraints for both native and containerized environments.
--   `DOC_INDEX.md`: Master index of all documentation files.
--   `ARCHITECTURE.md`: *This file*, describing the project's structure.
--   `HISTORY.md`: Chronological log of build/debug milestones and resolutions.
--   `QUIRKS.md`: Lists non-obvious issues, surprises, and workarounds encountered.
-EXPERIMENT_PROTOCOL.md`: Guidelines for running experiments with `train_probe.py` and Hydra.
--   *(Future: More detailed docs on specific components as they are developed).*
+*   **`data_staging/`**: (Gitignored)
+    *   Local staging area for downloading full datasets (e.g., `ud_ewt_full/`) and for intermediate files during sample data preparation (e.g., `my_ewt_sample_for_legacy_probe/`, `modern_elmo_prep/`).
+
+*   **`docs/`**: All project documentation. See `docs/DOC_INDEX.md` for a full map.
+
+*   **`env/`**: Dockerfiles for containerized environments.
+    *   `Dockerfile.legacy_pt_cpu`: Defines the environment for running the original H&M code (Phase 0a).
+    *   *(Planned: `Dockerfile.cuda` for modern probe on NVIDIA GPUs).*
+
+*   **`outputs/`**: (Gitignored by default)
+    *   Default root directory where Hydra saves outputs for each run (logs, configs, checkpoints, metrics). Typically structured as `outputs/YYYY-MM-DD/HH-MM-SS/`.
+
+*   **`results_staging/`**: (Gitignored)
+    *   Local directory used for mounting and inspecting results generated by Docker container runs (especially from Phase 0a).
+
+*   **`scripts/`**: Executable Python and shell scripts for the project.
+    *   **Legacy Support:**
+        *   `check_legacy_env.sh`: Health check for the `probe:legacy_pt_cpu` container.
+        *   `run_legacy_probe.sh`: Wrapper to run H&M's `run_experiment.py` or `run_demo.py` inside the legacy container.
+    *   **Data Preparation (for samples):**
+        *   `create_conllu_sample.py`: Generates small CoNLLU samples from larger files.
+        *   `convert_sample_conllu_to_raw.py`: Converts sample CoNLLU to raw text for ELMo.
+        *   `generate_elmo_embeddings_for_sample.sh`: Generates ELMo HDF5s for samples using AllenNLP in Docker.
+    *   **Modern Probe Pipeline:**
+        *   `train_probe.py`: Main Hydra-configurable script for training and evaluating modern structural probes (Phase 1 deliverable).
+    *   *(Planned: `extract_embeddings.py` for modern LLMs in Phase 2).*
+
+*   **`src/`**: Source code for the project.
+    *   `legacy/structural_probe/`: Contains the vendored original Hewitt & Manning codebase (details in Section 1).
+    *   `torch_probe/`: Houses the modern PyTorch (v2.x) re-implementation of the structural probe and associated utilities (Phase 1 deliverables).
+        *   `utils/`: Utility modules for the modern probe.
+            *   `conllu_reader.py`: Parses CoNLL-U files, focusing on syntactic tokens.
+            *   `gold_labels.py`: Computes gold tree depths and pairwise distances.
+            *   `embedding_loader.py`: Loads pre-computed embeddings from HDF5.
+        *   `dataset.py`: Defines `ProbeDataset` (PyTorch Dataset) and `collate_probe_batch`.
+        *   `probe_models.py`: Defines `DistanceProbe` and `DepthProbe` as `nn.Module`s.
+        *   `loss_functions.py`: Custom L1 loss functions for distance and depth tasks.
+        *   `evaluate.py`: Functions for calculating metrics (Spearman, UUAS, Root Accuracy) with punctuation filtering.
+        *   `train_utils.py`: Helpers for training (optimizer, early stopping, checkpointing).
+    *   *(Planned: `src/common/` for utilities shared across different probe types or experiments).*
+    *   *(Planned: `src/extraction/` for modern LLM hidden state extraction logic).*
+
+*   **`tests/`**: Contains all tests for the project.
+    *   `smoke/`: Basic integration tests for pipelines.
+        *   `test_probe_pipeline_smoke.py`: Runs a minimal version of `scripts/train_probe.py`.
+    *   `unit/torch_probe/`: Unit tests for individual modules in `src/torch_probe/`.
+        *   Includes tests for `conllu_reader`, `dataset`, `embedding_loader`, `evaluate`, `gold_labels`, `loss_functions`, `probe_models`, `train_utils`.
+        *   Contains both self-written tests and independent test suites provided by collaborators.
+
+*   **Root Directory Files:**
+    *   `README.md`: Main project entry point.
+    *   `pyproject.toml`, `poetry.lock`: Poetry dependency and project management.
+    *   `requirements-mps.txt`: Exported requirements for the native macOS MPS environment.
+    *   `.gitignore`: Specifies intentionally untracked files.
+    *   *(Future: `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE` for this project's code).*
+
+---
