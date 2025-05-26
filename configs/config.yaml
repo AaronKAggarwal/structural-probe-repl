@@ -1,0 +1,88 @@
+# configs/config.yaml
+
+# The defaults list defines the composition of the configuration.
+# Each item refers to a config group (directory) and selects a default config file from it,
+# or sets a top-level key to null if it must be provided by an experiment/CLI.
+defaults:
+  # Config groups for different aspects of the experiment
+  - _self_
+  - dataset: elmo_ewt_MY_sample  # Default dataset choice
+  - embeddings: elmo_l2_MY_sample       # Default embeddings choice
+  - probe: distance_rank32           # Default probe choice
+  - training: default_adam           # Default training setup
+  - evaluation: default_metrics      # Default evaluation setup
+# - experiment: null                 # 'experiment' group, must be specified by user via CLI or another config
+  
+  # _self_ allows fields defined directly in *this file* (config.yaml) to be part of the config
+  # and allows them to be overridden by composed configs or CLI.
+  # It's typically placed last or near last.
+#  - _self_
+
+# --- Top-level default values that can be overridden ---
+# These are general settings. Specifics for dataset paths, embedding paths,
+# probe rank, optimizer params etc. will come from the chosen group configs.
+
+# --- Dataset related (placeholders, actual values come from chosen dataset config) ---
+dataset: # This section will be populated by the chosen file from `configs/dataset/`
+  name: "???" # Should be overridden by the chosen dataset config file
+  paths:
+    conllu_train: "???"
+    conllu_dev: "???"
+    conllu_test: null # Making test set optional by default
+
+# --- Embeddings related (placeholders) ---
+embeddings: # This section will be populated by the chosen file from `configs/embeddings/`
+  source_model_name: "???"
+  layer_index: -1 # Placeholder, needs to be set
+  paths:
+    train: "???"
+    dev: "???"
+    test: null # Making test set optional by default
+  dimension: null # Will be inferred by ProbeDataset if null, or can be set for verification
+
+# --- Probe related (placeholders/defaults) ---
+probe: # This section will be populated by the chosen file from `configs/probe/`
+  type: "distance" # A sensible default probe type
+  rank: 32         # A sensible default rank
+
+# --- Training related (placeholders/defaults) ---
+training: # This section will be populated by the chosen file from `configs/training/`
+  optimizer: # Optimizer details will come from chosen training config (e.g., default_adam.yaml)
+    name: "Adam"
+    lr: 0.001
+  batch_size: 64
+  epochs: 50
+  patience: 5
+  early_stopping_metric: "loss" # Default metric to monitor for early stopping (options: loss, uuas, spearmanr, root_acc)
+  early_stopping_delta: 0.001   # Minimum change to be considered an improvement
+  loss_function: "l1_squared_diff" 
+  clip_grad_norm: null # e.g., 1.0 or null
+
+# --- Evaluation related (placeholders/defaults) ---
+evaluation: # This section will be populated by the chosen file from `configs/evaluation/`
+  metrics: ["spearmanr", "uuas"] # Default metrics for a distance probe
+
+# --- Runtime settings ---
+runtime:
+  device: "auto" # Options: "cpu", "mps", "cuda", "auto"
+  seed: 42
+  num_workers: 0 # For DataLoader
+  resolve_paths: true # If true, paths in config are relative to original_cwd of the script
+
+# --- Logging settings ---
+logging:
+  # Hydra automatically creates output directories.
+  # Default pattern: outputs/YYYY-MM-DD/HH-MM-SS/
+  # We can customize this further using hydra.job.name, hydra.run.dir, etc.
+  # output_dir_base: "outputs" # Not strictly needed if relying on Hydra's default `outputs` dir
+  
+  # experiment_name will often be derived from the name of the experiment config file
+  # e.g., if running `experiment=my_exp`, hydra.job.name might be `my_exp`.
+  # This can be used to create a subdirectory under Hydra's run output dir.
+  experiment_name: null # If null, Hydra typically uses the composed config name or script name.
+
+  log_freq_batch: 50 # Log training batch loss every N batches
+  wandb:
+    enable: false
+    project: "structural-probes-modern" # Your W&B project name
+    entity: null # Your W&B username or team name (optional, can be set via env var)

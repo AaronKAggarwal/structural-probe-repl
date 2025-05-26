@@ -1,5 +1,3 @@
-Okay, I will update your `docs/ENV_SETUP.md` file, primarily focusing on the "Legacy PyTorch Probe Environment" section to reflect the final successful setup using `whykay-01`'s data and the original H&M `data.py`.
-
 ---
 
 **Updated `docs/ENV_SETUP.md`**

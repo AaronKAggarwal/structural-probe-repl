@@ -1,0 +1,6 @@
+# configs/evaluation/default_metrics.yaml
+# This file is somewhat redundant if metrics are chosen based on probe.type in train_probe.py
+# But can be used to override specific metric calculation details if needed later.
+# For now, the main script can choose metrics based on probe.type.
+# Example:
+# metrics_to_compute: ["spearmanr", "uuas"] # This would be for distance

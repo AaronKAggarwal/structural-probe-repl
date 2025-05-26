@@ -1,0 +1,6 @@
+# configs/dataset/elmo_ewt_MY_sample.yaml
+name: "elmo_ewt_my_generated_sample"
+paths:
+  conllu_train: "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.conllu"
+  conllu_dev:   "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.conllu"
+  conllu_test:  "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-test.conllu"

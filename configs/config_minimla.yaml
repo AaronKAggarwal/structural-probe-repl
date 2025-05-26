@@ -1,0 +1,30 @@
+# configs/config.yaml
+defaults:
+  - dataset: elmo_ewt_sample_whykay01
+  - embeddings: elmo_l2_whykay01
+  - probe: distance_rank32
+  - training: default_adam
+  # - evaluation: default_metrics # Optional, if you define it below or in experiment file
+  
+  # This is where the experiment config will be merged.
+  # The user provides 'experiment=name_of_experiment_file' on CLI.
+  # Hydra will find configs/experiment/name_of_experiment_file.yaml
+  # and merge its contents.
+  - experiment: ??? # This indicates an 'experiment' group, must be chosen.
+                    # Set to 'elmo_ewt_dist_phase1_train' if that's your default experiment.
+                    # Or keep as '???' or 'null' to force CLI specification.
+                    # If 'null', and you provide experiment=X on CLI, it works.
+                    # If '???', Hydra prompts you to choose from configs/experiment/.
+
+  - _self_
+
+# Define top-level structures that experiment files will populate/override
+dataset: {}
+embeddings: {}
+probe: {}
+training: {}
+evaluation: # Add default evaluation if needed
+  metrics: ["spearmanr", "uuas"] # Default for distance, will be overridden by depth experiment
+
+runtime: {seed: 42, device: cpu, resolve_paths: true}
+logging: {wandb: {enable: false}}

@@ -1,0 +1,8 @@
+# configs/embeddings/elmo_l2_MY_sample.yaml
+source_model_name: "elmo_original_5.5B_my_generated_sample"
+layer_index: 2 
+paths:
+  train: "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.elmo-layers.hdf5"
+  dev:   "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.elmo-layers.hdf5"
+  test:  "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample/en_ewt-ud-test.elmo-layers.hdf5"
+dimension: 1024 

@@ -76,4 +76,5 @@ This directory houses all project documentation. Key files include:
 -   `ARCHITECTURE.md`: *This file*, describing the project's structure.
 -   `HISTORY.md`: Chronological log of build/debug milestones and resolutions.
 -   `QUIRKS.md`: Lists non-obvious issues, surprises, and workarounds encountered.
+EXPERIMENT_PROTOCOL.md`: Guidelines for running experiments with `train_probe.py` and Hydra.
 -   *(Future: More detailed docs on specific components as they are developed).*

@@ -1,0 +1,11 @@
+# configs/training/default_adam.yaml
+optimizer:
+  name: "Adam"
+  lr: 0.001
+  weight_decay: 0.0
+  # betas: [0.9, 0.999] # Can add if different from torch default
+  # eps: 1e-8
+batch_size: 32 # Smaller for the small EWT sample
+epochs: 50 # More epochs for small sample, early stopping will kick in
+patience: 5
+# clip_grad_norm: 1.0 # Optional

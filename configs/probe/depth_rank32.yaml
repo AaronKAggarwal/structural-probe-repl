@@ -1,0 +1,3 @@
+# configs/probe/depth_rank32.yaml
+type: "depth"
+rank: 32

@@ -1,0 +1,30 @@
+# @package _global_
+# configs/experiment/elmo_ewt_dist_phase1_train.yaml
+# This experiment will train a distance probe on the ELMo EWT sample data.
+
+defaults:
+  - override /dataset: elmo_ewt_sample_whykay01
+  - override /embeddings: elmo_l2_whykay01
+  - override /probe: distance_rank32 
+  - override /training: default_adam
+  - _self_ # Essential to allow overriding fields defined in this file or config.yaml
+
+# Specific overrides for this experiment, if any:
+probe:
+  type: "distance" # Explicitly set, though default_probe might already be distance
+
+embeddings:
+  layer_index: 2
+  dimension: 1024
+
+training:
+  epochs: 30 # Override default epochs from config.yaml if desired for this specific run
+  patience: 5
+
+evaluation: # This selects which metrics evaluate_probe will try to compute and return
+  metrics: ["spearmanr", "uuas"]
+
+logging:
+  experiment_name: "elmo_ewt_distance_r32_phase1" # Custom name for this run
+  wandb:
+    enable: false # Set to true to log to W&B

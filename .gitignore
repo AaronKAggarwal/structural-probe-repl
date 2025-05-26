@@ -83,7 +83,13 @@ htmlcov/
 *.spearmanr-5-50-mean   # Or use *.spearmanr*
 *.uuas
 *.root_acc
-
+*.pt
+/checkpoints/
+/outputs/
+*.log
+metrics_summary.json
+commits_graph.txt
+directory_tree.txt
 # --- Specific to H&M Legacy Code Outputs ---
 # Ignore the results dir within the legacy code structure too
 src/legacy/structural_probe/example/results/ 
@@ -96,6 +102,7 @@ src/legacy/structural_probe/example/results/
 # --- Other ---
 *.ipynb_checkpoints
 *.DS_Store
+.cursorignore
 
 # --- Secrets ---
 # (Add any files containing secrets, keys, passwords here - none expected for this project)
