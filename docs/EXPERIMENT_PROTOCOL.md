@@ -45,7 +45,31 @@ All experiments are controlled via YAML configuration files managed by Hydra.
 *   `logging.experiment_name`
 *   `logging.wandb.enable` (true/false)
 
-## 4. Running a Single Experiment
+
+## 4. Learning Rate Scheduling (H&M Style Optimizer Reset)
+
+The `train_probe.py` script supports an optional learning rate decay mechanism with optimizer state reset, similar to that described by Hewitt & Manning. This is configured under the `training.lr_scheduler_with_reset` group in your Hydra configuration (e.g., `configs/training/default_adam.yaml`).
+
+Key parameters:
+*   `enable: true` (boolean): Set to `true` to activate this scheduler. Defaults to `false`.
+*   `lr_decay_factor: 0.1` (float): Factor by which the current learning rate is multiplied.
+*   `lr_decay_patience: 3` (int): Number of validation epochs without improvement in the `training.early_stopping_metric` before the LR is decayed.
+*   `min_lr: 1.0e-6` (float): The learning rate will not be decayed below this value.
+
+When the LR is decayed:
+1.  The optimizer is re-initialized with the new, lower learning rate (this resets its internal state, like momentum).
+2.  The patience counter for the *LR scheduler itself* is reset.
+3.  The `best_actual_metric` for the *main `EarlyStopper`* (for overall training termination) is also reset to give the model a chance to improve with the new LR.
+
+**Example Override to Enable and Configure:**
+```bash
+poetry run python scripts/train_probe.py experiment=... \
+    training.lr_scheduler_with_reset.enable=true \
+    training.lr_scheduler_with_reset.lr_decay_patience=2 \
+    training.lr_scheduler_with_reset.lr_decay_factor=0.5
+```
+
+## 5. Running a Single Experiment
 
 The main script for training and evaluating probes is `scripts/train_probe.py`.
 
@@ -86,7 +110,7 @@ poetry run python scripts/train_probe.py [GROUP_OVERRIDES...] [PARAM_OVERRIDES..
         hydra.run.dir=my_custom_outputs/my_run_001
     ```
 
-## 5. Running Multiple Experiments (Sweeps with Hydra Multirun)
+## 6. Running Multiple Experiments (Sweeps with Hydra Multirun)
 
 Hydra's multirun feature is powerful for hyperparameter sweeps or running across multiple configurations (e.g., different layers).
 
@@ -122,7 +146,7 @@ poetry run python scripts/train_probe.py --multirun [PARAMS_TO_SWEEP...] [OTHER_
 *   **Output Directory for Multirun:**
     Hydra saves multirun outputs to `multirun/YYYY-MM-DD/HH-MM-SS/` by default, with subdirectories for each job (0, 1, 2,...).
 
-## 6. Interpreting Outputs
+## 7. Interpreting Outputs
 
 For each individual run (whether single or part of a multirun), Hydra creates an output directory. Inside this directory:
 
@@ -138,7 +162,7 @@ For each individual run (whether single or part of a multirun), Hydra creates an
     *   `best_dev_monitored_metric_value`: The best value of the metric monitored for early stopping.
     *   `test_loss`, `test_spearmanr`, `test_uuas`, `test_root_acc`: Metrics from evaluating the best model on the (optional) test set.
 
-## 7. Weights & Biases Integration (Optional)
+## 8. Weights & Biases Integration (Optional)
 
 If `logging.wandb.enable=true` in the configuration:
 *   Metrics (training loss, dev loss, dev metrics, test metrics) will be logged to the specified W&B project.
@@ -146,7 +170,7 @@ If `logging.wandb.enable=true` in the configuration:
 *   This allows for easy visualization, comparison across runs, and collaboration.
 *   Ensure you have `wandb` installed (`poetry add wandb`) and are logged in (`wandb login`).
 
-## 8. Adding New Datasets, Embeddings, or Probe Configurations
+## 9. Adding New Datasets, Embeddings, or Probe Configurations
 
 1.  **New Dataset:**
     *   Prepare CoNLL-U files (train, dev, test).

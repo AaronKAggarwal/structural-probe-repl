@@ -23,7 +23,7 @@ skip_if_no_data = pytest.mark.skipif(not data_files_exist,
                                      reason="Sample data files for smoke test not found at expected legacy paths.")
 
 @pytest.fixture
-def smoke_test_config_file(tmp_path: Path) -> Path: # Renamed fixture for clarity
+def smoke_test_config_file(tmp_path: Path) -> Path:
     """Create a self-contained minimal Hydra config for a smoke test run."""
     config_content = f"""
     dataset:
@@ -32,6 +32,7 @@ def smoke_test_config_file(tmp_path: Path) -> Path: # Renamed fixture for clarit
         conllu_train: "{CONLLU_FILE_REL_PATH}"
         conllu_dev: "{CONLLU_FILE_REL_PATH}"
         conllu_test: null
+    
     embeddings:
       source_model_name: "elmo_smoke_test"
       layer_index: {ELMO_LAYER_INDEX}
@@ -40,32 +41,46 @@ def smoke_test_config_file(tmp_path: Path) -> Path: # Renamed fixture for clarit
         dev: "{HDF5_FILE_REL_PATH}"
         test: null
       dimension: {EMBEDDING_DIM}
+
     probe:
       type: "distance"
-      rank: {PROBE_RANK_SMOKE}
+      rank: {PROBE_RANK_SMOKE} 
+    
     training:
       optimizer:
         name: "Adam"
         lr: 0.001
         weight_decay: 0.0
-        betas: [0.9, 0.999]
-        eps: 1.0e-08
+        betas: [0.9, 0.999] # YAML list format
+        eps: 1.0e-8
       batch_size: {BATCH_SIZE_SMOKE}
       epochs: 1
-      patience: 1
-      early_stopping_metric: "loss"
-      early_stopping_delta: 100.0
-      loss_function: "l1_squared_diff"
-      clip_grad_norm: null
-    evaluation:
+      patience: 1 # Patience for EarlyStopper (overall run)
+      early_stopping_metric: "loss" 
+      early_stopping_delta: 0.0001 # Default from default_adam.yaml, 100 was too large
+      loss_function: "l1_squared_diff" 
+      clip_grad_norm: null 
+      
+      # VVV ADD THIS SECTION VVV
+      lr_scheduler_with_reset:
+        enable: true # Test with it enabled for smoke test
+        lr_decay_factor: 0.1
+        lr_decay_patience: 1 # Decay quickly for smoke test if metric doesn't improve
+        min_lr: 1.0e-7       # Slightly different min_lr to distinguish
+        # monitor_metric and monitor_mode will default to early_stopping_metric's
+        # delta for LR scheduler improvement check will default to early_stopping_delta
+    
+    evaluation: 
       metrics: ["spearmanr", "uuas"]
+
     runtime:
-      device: "cpu"
+      device: "cpu" 
       seed: 42
       num_workers: 0
-      resolve_paths: true
+      resolve_paths: true 
+
     logging:
-      output_dir_base: "outputs_smoke_test" # This will be relative to CWD of train_probe.py
+      output_dir_base: "outputs_smoke_test" 
       experiment_name: "smoke_test_elmo_distance"
       log_freq_batch: 1
       wandb:
@@ -73,7 +88,7 @@ def smoke_test_config_file(tmp_path: Path) -> Path: # Renamed fixture for clarit
         project: "smoke_tests"
         entity: null
     """
-    config_file_path = tmp_path / "smoke_config.yaml"
+    config_file_path = tmp_path / "smoke_config.yaml" # Ensure name is consistent
     config_file_path.write_text(config_content)
     return config_file_path
 

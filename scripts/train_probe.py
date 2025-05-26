@@ -6,29 +6,34 @@ import numpy as np
 import random
 import os
 from pathlib import Path
-import logging # Use Python's logging
-import json # For saving metrics summary
-from typing import Optional, List, Dict, Any, Callable
+import logging 
+import json 
+import sys 
+from typing import Optional, Dict, Any # Added for clarity
 
-# W&B Import - try/except for optionality
+# --- Add src to path for direct execution ---
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+SRC_ROOT = PROJECT_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.append(str(SRC_ROOT))
+# --- End Path Addition ---
+
 try:
     import wandb
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-    wandb = None # Define wandb as None if not available
+    wandb = None 
 
-# Assuming src is in pythonpath or project is installed via poetry
 from torch_probe.dataset import ProbeDataset, collate_probe_batch
 from torch_probe.probe_models import DistanceProbe, DepthProbe
 from torch_probe.loss_functions import distance_l1_loss, depth_l1_loss
-from torch_probe.train_utils import get_optimizer, EarlyStopper, save_checkpoint, load_checkpoint
+from torch_probe.train_utils import get_optimizer, EarlyStopper, LRSchedulerWithOptimizerReset, save_checkpoint, load_checkpoint
 from torch_probe.evaluate import evaluate_probe 
 from torch.utils.data import DataLoader
 
-# Setup basic logging
-log = logging.getLogger(__name__) # Hydra will configure this further
-
+log = logging.getLogger(__name__) 
 
 def set_seeds(seed: int):
     random.seed(seed)
@@ -36,67 +41,48 @@ def set_seeds(seed: int):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-    # For MPS, torch.manual_seed is generally sufficient for torch operations
-    # For full reproducibility on MPS, you might also need:
-    # torch.mps.manual_seed(seed) # If using torch specific MPS ops that need it
-    # However, often results are non-deterministic on MPS/GPU anyway due to parallel ops
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def train(cfg: DictConfig) -> Optional[float]:
     
-    # --- Setup ---
-    # Hydra automatically changes CWD to the output directory
-    # Use hydra.utils.to_absolute_path or get_original_cwd for original paths
-    output_dir = Path.cwd() # This is Hydra's output directory
+    output_dir = Path.cwd() 
     log.info(f"Hydra output directory: {output_dir}")
-    log.info(f"Original working directory: {hydra.utils.get_original_cwd()}")
-    log.info(f"Loaded config:\n{OmegaConf.to_yaml(cfg)}")
-
+    original_cwd = hydra.utils.get_original_cwd()
+    log.info(f"Original working directory: {original_cwd}")
+    # log.info(f"Loaded config:\n{OmegaConf.to_yaml(cfg)}") # Can be very verbose
 
     set_seeds(cfg.runtime.seed)
 
-    # Device setup
     if cfg.runtime.device == "auto":
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
+        if torch.cuda.is_available(): device = torch.device("cuda")
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available() and torch.backends.mps.is_built():
-            device = torch.device("mps")
-        else:
-            device = torch.device("cpu")
-    else:
-        device = torch.device(cfg.runtime.device)
+            device = torch.device("mps"); log.info("MPS device selected and available.")
+        else: device = torch.device("cpu"); log.info("MPS/CUDA not available. Using CPU.")
+    else: device = torch.device(cfg.runtime.device)
     log.info(f"Using device: {device}")
 
-    # W&B Initialization (optional)
     if cfg.logging.wandb.enable and WANDB_AVAILABLE:
         try:
             wandb.init(
-                project=cfg.logging.wandb.project,
-                entity=cfg.logging.wandb.get("entity"), 
+                project=cfg.logging.wandb.project, entity=cfg.logging.wandb.get("entity"), 
                 config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
-                name=cfg.logging.get("experiment_name", Path(output_dir).name), # Use Hydra's run dir name if no exp name
-                dir=str(output_dir), 
-                reinit=True # Allow re-init if called multiple times (e.g. in sweeps)
+                name=cfg.logging.get("experiment_name", Path(output_dir).name), 
+                dir=str(output_dir), reinit=True 
             )
             log.info("Weights & Biases initialized.")
         except Exception as e:
-            log.warning(f"Could not initialize W&B: {e}. Proceeding without W&B.")
-            cfg.logging.wandb.enable = False 
+            log.warning(f"Could not initialize W&B: {e}. Proceeding without W&B."); cfg.logging.wandb.enable = False 
     elif cfg.logging.wandb.enable and not WANDB_AVAILABLE:
-        log.warning("W&B logging enabled in config, but 'wandb' library not found. Skipping.")
-        cfg.logging.wandb.enable = False
+        log.warning("W&B logging enabled, but 'wandb' not found. Skipping."); cfg.logging.wandb.enable = False
 
-    # --- Data Loading ---
     log.info("Loading data...")
-    original_cwd = hydra.utils.get_original_cwd()
-
-    def resolve_path(p):
-        if p is None: return None
-        return Path(original_cwd) / p if not Path(p).is_absolute() else Path(p)
+    def resolve_path(p_str: Optional[str]) -> Optional[Path]:
+        if p_str is None: return None
+        path = Path(p_str)
+        return Path(original_cwd) / path if not path.is_absolute() else path
 
     train_conllu_path = resolve_path(cfg.dataset.paths.conllu_train)
     dev_conllu_path = resolve_path(cfg.dataset.paths.conllu_dev)
-    
     train_hdf5_path = resolve_path(cfg.embeddings.paths.train)
     dev_hdf5_path = resolve_path(cfg.embeddings.paths.dev)
     
@@ -113,7 +99,7 @@ def train(cfg: DictConfig) -> Optional[float]:
     
     actual_embedding_dim = train_dataset.embedding_dim 
     if cfg.embeddings.get("dimension") is not None and cfg.embeddings.dimension != actual_embedding_dim:
-        log.warning(f"Config embedding_dim {cfg.embeddings.dimension} differs from inferred {actual_embedding_dim}. Using inferred.")
+        log.warning(f"Config embedding_dim {cfg.embeddings.dimension} != inferred {actual_embedding_dim}. Using inferred.")
 
     train_loader = DataLoader(
         train_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_probe_batch, 
@@ -123,76 +109,91 @@ def train(cfg: DictConfig) -> Optional[float]:
         dev_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_probe_batch, 
         shuffle=False, num_workers=cfg.runtime.get("num_workers", 0)
     )
-    log.info(f"Data loaded. Train sentences: {len(train_dataset)}, Dev sentences: {len(dev_dataset)}")
+    log.info(f"Data loaded. Train: {len(train_dataset)}, Dev: {len(dev_dataset)} sentences.")
 
-    # --- Model, Loss, Optimizer ---
-    log.info("Initializing model, loss, optimizer...")
+    log.info("Initializing model, loss, optimizer, schedulers...")
+    monitor_metric = cfg.training.early_stopping_metric
+    monitor_mode = "min" if monitor_metric == "loss" else "max"
+        
     if cfg.probe.type == "distance":
         probe_model = DistanceProbe(actual_embedding_dim, cfg.probe.rank)
         loss_fn = distance_l1_loss
-        # For early stopping: UUAS is better but requires more setup for per-epoch calculation.
-        # Dev loss is simpler. H&M paper mentions early stopping on dev loss.
-        monitor_metric = cfg.training.get("early_stopping_metric", "loss") # "loss", "uuas", "spearmanr"
-        monitor_mode = "min" if monitor_metric == "loss" else "max"
     elif cfg.probe.type == "depth":
         probe_model = DepthProbe(actual_embedding_dim, cfg.probe.rank)
         loss_fn = depth_l1_loss
-        monitor_metric = cfg.training.get("early_stopping_metric", "loss") # "loss", "spearmanr", "root_acc"
-        monitor_mode = "min" if monitor_metric == "loss" else "max"
     else:
         raise ValueError(f"Unknown probe type: {cfg.probe.type}")
     
     probe_model.to(device)
     optimizer = get_optimizer(probe_model.parameters(), cfg.training.optimizer)
+    
     early_stopper = EarlyStopper(
         patience=cfg.training.patience, mode=monitor_mode, verbose=True,
-        delta=cfg.training.get("early_stopping_delta", 0.001)
+        delta=cfg.training.early_stopping_delta
     )
-    log.info("Model, loss, optimizer initialized.")
+    lr_scheduler_custom = None
+    if cfg.training.lr_scheduler_with_reset.get("enable", False):
+        lr_scheduler_custom = LRSchedulerWithOptimizerReset(
+            optimizer_cfg=cfg.training.optimizer, 
+            lr_decay_factor=cfg.training.lr_scheduler_with_reset.lr_decay_factor,
+            lr_decay_patience=cfg.training.lr_scheduler_with_reset.lr_decay_patience,
+            min_lr=cfg.training.lr_scheduler_with_reset.min_lr,
+            monitor_metric_mode=monitor_mode, 
+            delta=cfg.training.early_stopping_delta, # Using same delta for LR schedule improvement check
+            verbose=True
+        )
+        log.info("H&M-style LR decay with optimizer reset is ENABLED.")
+    else:
+        log.info("H&M-style LR decay with optimizer reset is DISABLED.")
+
+    log.info(f"Model, loss, optimizer, schedulers initialized. Monitoring '{monitor_metric}' in '{monitor_mode}' mode.")
     log.info(f"Probe model: {probe_model}")
     log.info(f"Number of parameters: {sum(p.numel() for p in probe_model.parameters() if p.requires_grad)}")
 
-
-    # --- Training Loop ---
     log.info("Starting training...")
-    best_dev_metric_value = float('-inf') if monitor_mode == "max" else float('inf')
+    best_dev_metric_for_checkpointing = float('-inf') if monitor_mode == "max" else float('inf')
     
+    try: # tqdm import for progress bar
+        from tqdm import tqdm
+    except ImportError:
+        log.warning("tqdm not found. Progress bar will not be shown."); 
+        def tqdm(iterable, *args, **kwargs): return iterable
+
+    best_dev_metric_value_for_checkpointing = float('-inf') if monitor_mode == "max" else float('inf')
+    log.info(f"Initial best_dev_metric_for_checkpointing set to: {best_dev_metric_value_for_checkpointing}") # Add for debug
+    log.info("Starting training...")
+
+    # Training loop
     for epoch in range(cfg.training.epochs):
         log.info(f"--- Epoch {epoch+1}/{cfg.training.epochs} ---")
         probe_model.train()
-        epoch_train_loss = 0.0
-        num_train_batches = 0
+        epoch_train_loss = 0.0; num_train_batches = 0
         
-        # Wrap train_loader with tqdm for progress bar
-        train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} Training", unit="batch")
+        train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} Training", unit="batch", leave=False)
         for batch_idx, batch in enumerate(train_pbar):
             embeddings_b = batch["embeddings_batch"].to(device)
-            labels_b = batch["labels_batch"].to(device)
-            lengths_b = batch["lengths_batch"].to(device) 
+            labels_b = batch["labels_batch"].to(device) 
+            lengths_b = batch["lengths_batch"] 
 
             optimizer.zero_grad()
             predictions_b = probe_model(embeddings_b)
-            loss = loss_fn(predictions_b, labels_b, lengths_b)
+            loss = loss_fn(predictions_b, labels_b, lengths_b.to(device))
             
             loss.backward()
-            if cfg.training.get("clip_grad_norm") is not None: # Check for null explicitly
+            if cfg.training.get("clip_grad_norm") is not None:
                 torch.nn.utils.clip_grad_norm_(probe_model.parameters(), float(cfg.training.clip_grad_norm))
             optimizer.step()
             
-            epoch_train_loss += loss.item()
-            num_train_batches += 1
+            epoch_train_loss += loss.item(); num_train_batches += 1
             train_pbar.set_postfix(loss=loss.item())
-            if cfg.logging.wandb.enable and batch_idx % cfg.logging.get("log_freq_batch", 20) == 0 : # Log batch loss
-                wandb.log({"batch_train_loss": loss.item(), 
-                           "epoch_step": epoch + batch_idx/len(train_loader)})
+            if cfg.logging.wandb.enable and batch_idx > 0 and batch_idx % cfg.logging.get("log_freq_batch", 20) == 0 :
+                wandb.log({"batch_train_loss": loss.item(), "epoch_float": epoch + (batch_idx / len(train_loader))})
 
-
-        avg_train_loss = epoch_train_loss / num_train_batches if num_train_batches > 0 else 0
+        avg_train_loss = epoch_train_loss / num_train_batches if num_train_batches > 0 else 0.0
         log.info(f"Epoch {epoch+1} Average Train Loss: {avg_train_loss:.4f}")
-        if cfg.logging.wandb.enable:
-            wandb.log({"epoch": epoch + 1, "avg_epoch_train_loss": avg_train_loss})
+        
+        wandb_log_data = {"epoch": epoch + 1, "avg_epoch_train_loss": avg_train_loss, "current_lr": optimizer.param_groups[0]['lr']}
 
-        # Validation
         log.info(f"Running validation for epoch {epoch+1}...")
         dev_metrics = evaluate_probe(probe_model, dev_loader, loss_fn, device, cfg.probe.type)
         
@@ -200,51 +201,67 @@ def train(cfg: DictConfig) -> Optional[float]:
         for k, v_met in dev_metrics.items(): log_msg += f"{k}: {v_met:.4f} "
         log.info(log_msg)
 
-        if cfg.logging.wandb.enable:
-            wandb_dev_metrics = {f"dev_{k}": v_met for k,v_met in dev_metrics.items()}
-            wandb_dev_metrics["epoch"] = epoch + 1
-            wandb.log(wandb_dev_metrics)
+        wandb_dev_metrics = {f"dev_{k}": v_met for k,v_met in dev_metrics.items()}
+        wandb_log_data.update(wandb_dev_metrics)
+        if cfg.logging.wandb.enable and wandb.run: wandb.log(wandb_log_data)
 
-        current_dev_metric_for_stopping = dev_metrics[monitor_metric]
+        current_dev_metric_to_monitor = dev_metrics.get(monitor_metric)
+        if current_dev_metric_to_monitor is None:
+            log.warning(f"Monitor metric '{monitor_metric}' not found in dev_metrics. Using 'loss' for decisions.")
+            current_dev_metric_to_monitor = dev_metrics["loss"]
+            effective_monitor_mode = "min" # Loss is always minimized
+        else:
+            effective_monitor_mode = monitor_mode
         
-        is_best = False
-        if monitor_mode == "max":
-            if current_dev_metric_for_stopping > best_dev_metric_value:
-                best_dev_metric_value = current_dev_metric_for_stopping
-                is_best = True
+        is_best_for_checkpoint = False
+        if effective_monitor_mode == "max":
+            if current_dev_metric_to_monitor > best_dev_metric_value_for_checkpointing:
+                best_dev_metric_value_for_checkpointing = current_dev_metric_to_monitor
+                is_best_for_checkpoint = True
         else: # min mode
-            if current_dev_metric_for_stopping < best_dev_metric_value:
-                best_dev_metric_value = current_dev_metric_for_stopping
-                is_best = True
+            if current_dev_metric_to_monitor < best_dev_metric_value_for_checkpointing:
+                best_dev_metric_value_for_checkpointing = current_dev_metric_to_monitor
+                is_best_for_checkpoint = True
         
-        if is_best:
-            log.info(f"New best {monitor_metric}: {best_dev_metric_value:.4f}. Saving model...")
-        save_checkpoint(probe_model, optimizer, epoch + 1, current_dev_metric_for_stopping, 
+        if is_best_for_checkpoint:
+            log.info(f"New best {monitor_metric} for checkpointing: {best_dev_metric_value_for_checkpointing:.4f}.")
+        
+        save_checkpoint(probe_model, optimizer, epoch + 1, current_dev_metric_to_monitor, 
                         output_dir / "checkpoints", 
                         filename_prefix=f"{cfg.probe.type}_probe_rank{cfg.probe.rank}",
-                        is_best=is_best) # Pass is_best to save_checkpoint
+                        is_best=is_best_for_checkpoint)
         
-        if early_stopper(current_dev_metric_for_stopping):
-            log.info(f"Early stopping triggered at epoch {epoch+1}.")
+        if lr_scheduler_custom:
+            new_opt = lr_scheduler_custom.step(current_dev_metric_to_monitor, probe_model.parameters()) # Pass model.parameters()
+            if new_opt:
+                log.info(f"Optimizer has been reset by LRScheduler. Old LR: {optimizer.param_groups[0]['lr']:.2e}, New LR: {new_opt.param_groups[0]['lr']:.2e}")
+                optimizer = new_opt 
+                early_stopper.best_actual_metric = None # Reset early stopper's best score
+                log.info("EarlyStopper's best score has been reset due to LR change by custom scheduler.")
+        
+        if early_stopper(current_dev_metric_to_monitor):
+            log.info(f"Early stopping for overall training triggered at epoch {epoch+1}.")
             break
     
     log.info("Training finished.")
+    final_metrics_summary: Dict[str, Any] = {"best_dev_monitored_metric_value": early_stopper.best_actual_metric} 
+
+    best_checkpoint_filename = f"{cfg.probe.type}_probe_rank{cfg.probe.rank}_best.pt"
+    best_checkpoint_path = output_dir / "checkpoints" / best_checkpoint_filename
     
-    # --- Post Training ---
-    best_checkpoint_path = output_dir / "checkpoints" / f"{cfg.probe.type}_probe_rank{cfg.probe.rank}_best.pt"
     if best_checkpoint_path.exists():
         log.info(f"Loading best model from {best_checkpoint_path} for final reporting...")
-        # We don't need optimizer for final eval, can pass None
-        _, loaded_metric = load_checkpoint(best_checkpoint_path, probe_model, None, device) 
-        log.info(f"Best model loaded (had dev {monitor_metric}: {loaded_metric:.4f}).")
+        loaded_epoch, loaded_metric_val = load_checkpoint(best_checkpoint_path, probe_model, None, device) 
+        log.info(f"Best model (from completed epoch {loaded_epoch-1}, dev {monitor_metric}: {loaded_metric_val:.4f}) loaded.")
+        final_metrics_summary["best_model_epoch"] = loaded_epoch -1
+        final_metrics_summary["best_model_metric_value"] = loaded_metric_val
     else:
-        log.warning("No best model checkpoint found ('_best.pt'), using model from last epoch for test set if applicable.")
-
-    # Final evaluation on test set
-    final_metrics_summary = {"best_dev_metric_on_monitor": best_dev_metric_value}
+        log.warning(f"No best model checkpoint '{best_checkpoint_filename}' found in {output_dir / 'checkpoints'}. Using model from last trained epoch for test set.")
+        final_metrics_summary["best_model_epoch"] = epoch + 1 # Last completed epoch
+        final_metrics_summary["best_model_metric_value"] = current_dev_metric_to_monitor # Metric from last epoch
 
     if cfg.dataset.paths.get("conllu_test") and cfg.embeddings.paths.get("test"):
-        log.info("Evaluating on test set with best model...")
+        log.info("Evaluating on test set with best/final model...")
         test_conllu_path = resolve_path(cfg.dataset.paths.conllu_test)
         test_hdf5_path = resolve_path(cfg.embeddings.paths.test)
         
@@ -255,22 +272,18 @@ def train(cfg: DictConfig) -> Optional[float]:
                 embedding_dim=actual_embedding_dim
             )
             test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_probe_batch)
-            
             test_metrics = evaluate_probe(probe_model, test_loader, loss_fn, device, cfg.probe.type)
-            log_msg_test = f"Test Metrics: "
+            log_msg_test = f"Test Metrics with best/final model: "
             for k, v_met in test_metrics.items(): log_msg_test += f"{k}: {v_met:.4f} "
             log.info(log_msg_test)
-
-            if cfg.logging.wandb.enable:
-                wandb.log({f"final_test_{k}": v_met for k,v_met in test_metrics.items()})
+            if cfg.logging.wandb.enable and wandb.run: wandb.log({f"final_test_{k}": v_met for k,v_met in test_metrics.items()})
             final_metrics_summary.update({f"test_{k}": v_met for k,v_met in test_metrics.items()})
             test_dataset.close_hdf5()
         except Exception as e:
-            log.error(f"Error during test set evaluation: {e}")
+            log.error(f"Error during test set evaluation: {e}", exc_info=True)
     else:
         log.info("No test set specified in config, skipping final test evaluation.")
     
-    # Save final metrics summary
     summary_path = output_dir / "metrics_summary.json"
     with open(summary_path, "w") as f:
         json.dump(final_metrics_summary, f, indent=2)
@@ -279,20 +292,12 @@ def train(cfg: DictConfig) -> Optional[float]:
     train_dataset.close_hdf5()
     dev_dataset.close_hdf5()
 
-    if cfg.logging.wandb.enable:
-        wandb.finish()
+    if cfg.logging.wandb.enable and wandb.run: wandb.finish()
     
     log.info(f"Run finished. Results and checkpoints in: {output_dir}")
-    return best_dev_metric_value 
+    return early_stopper.best_actual_metric if early_stopper.best_actual_metric is not None else (float('-inf') if monitor_mode == "max" else float('inf'))
 
 if __name__ == "__main__":
-    # Configure basic logging for standalone runs if Hydra doesn't override
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    # Example of how to load tqdm if not using Hydra's default job logging
-    try:
-        from tqdm import tqdm # Ensure tqdm is available
-    except ImportError:
-        def tqdm(x, *args, **kwargs): return x # Dummy tqdm if not installed
-        log_warning("tqdm not found, progress bars will be basic.")
-
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO, 
+                        format='%(asctime)s [%(name)s:%(levelname)s] %(message)s')
     train()

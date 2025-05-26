@@ -28,12 +28,12 @@ The original paper introduced a method for identifying syntactic structure in la
         *   PyTorch `ProbeDataset` and `collate_fn` for data loading/batching implemented and unit-tested.
         *   `DistanceProbe` and `DepthProbe` PyTorch `nn.Module`s implemented and unit-tested.
         *   L1 loss functions (aligned with H&M methodology) implemented and unit-tested.
-        *   Training utilities (`get_optimizer`, `EarlyStopper`, checkpointing) and evaluation metrics (Spearman, UUAS, RootAcc with punctuation filtering) implemented and unit-tested.
+        *   Training utilities (`get_optimizer`, `EarlyStopper`, 'LRSchedulerWithOptimizerReset', checkpointing) and evaluation metrics (Spearman, UUAS, RootAcc with punctuation filtering) implemented and unit-tested.
     *   **Training Pipeline:**
         *   Main training script (`scripts/train_probe.py`) with Hydra integration implemented.
         *   Smoke test for the full modern training pipeline passes.
     *   **Validation:**
-        *   Successfully trained and evaluated modern distance and depth probes on an ELMo sample data (using self-generated, MWT-filtered aligned HDF5s), producing plausible metrics and demonstrating functionality on MPS. Qualitative parity with Phase 0a legacy code behavior established.
+        *   Successfully trained and evaluated modern distance and depth probes on an ELMo sample data (using self-generated, MWT-filtered aligned HDF5s), producing plausible metrics and demonstrating functionality on MPS. The pipeline, including H&M-style optimizer reset and LR decay, runs end-to-end producing plausible metrics. Qualitative parity with Phase 0a legacy code behavior established.
     *   Details in `docs/ARCHITECTURE.md` and `docs/HISTORY.md`.
 
 *   **Next Major Phase:** **Phase 2 - Data Preparation for Modern LLMs (PTB & Hidden State Extraction)**
