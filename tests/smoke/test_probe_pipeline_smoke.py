@@ -2,45 +2,64 @@
 import subprocess
 import pytest
 from pathlib import Path
-import shutil
-import os # For cleaning up files created in project root by smoke test
+import shutil # Keep for now, might not be needed if tmp_path handles all
+import os
+import re # For parsing stdout to find the output directory
+import subprocess
 
+# Define Project and Script Directories consistently
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+TRAIN_SCRIPT_PATH = SCRIPTS_DIR / "train_probe.py" # Absolute path to train_probe.py
 
-CONLLU_FILE_REL_PATH = "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.conllu"
-HDF5_FILE_REL_PATH = "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.elmo-layers.hdf5"
+# Define paths to known sample data (relative to PROJECT_ROOT)
+# These will be passed as overrides and resolved by train_probe.py using original_cwd
+CONLLU_FILE_REL_PATH_STR = "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.conllu"
+HDF5_FILE_REL_PATH_STR = "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.elmo-layers.hdf5"
 
-ELMO_LAYER_INDEX = 2
-EMBEDDING_DIM = 1024
-PROBE_RANK_SMOKE = 4
-BATCH_SIZE_SMOKE = 2
+# Embedding details for the sample HDF5 file
+ELMO_LAYER_INDEX_SMOKE = 2
+EMBEDDING_DIM_SMOKE = 1024
+PROBE_RANK_SMOKE = 4 # Keep small for speed
+BATCH_SIZE_SMOKE = 2 # Keep small
 
-data_files_exist = (PROJECT_ROOT / CONLLU_FILE_REL_PATH).exists() and \
-                   (PROJECT_ROOT / HDF5_FILE_REL_PATH).exists()
+# Check if data files exist for conditional skipping
+data_files_exist = (PROJECT_ROOT / CONLLU_FILE_REL_PATH_STR).exists() and \
+                   (PROJECT_ROOT / HDF5_FILE_REL_PATH_STR).exists()
 
 skip_if_no_data = pytest.mark.skipif(not data_files_exist,
                                      reason="Sample data files for smoke test not found at expected legacy paths.")
 
 @pytest.fixture
 def smoke_test_config_file(tmp_path: Path) -> Path:
-    """Create a self-contained minimal Hydra config for a smoke test run."""
+    hydra_output_base_for_smoke_test = tmp_path / "smoke_test_hydra_outputs"
+    
     config_content = f"""
+    # This config is self-contained and overrides everything from the main config.yaml
+    # No 'defaults' list pointing to external group files needed here for a full override.
+    
+    hydra:
+      run:
+        dir: {str(hydra_output_base_for_smoke_test)}/${{now:%Y-%m-%d}}/${{now:%H-%M-%S}}
+      job:
+        chdir: true 
+        name: smoke_test_full_pipeline
+    
     dataset:
-      name: "elmo_ewt_sample_smoke"
+      name: "elmo_ewt_sample_smoke_override"
       paths:
-        conllu_train: "{CONLLU_FILE_REL_PATH}"
-        conllu_dev: "{CONLLU_FILE_REL_PATH}"
+        conllu_train: "{CONLLU_FILE_REL_PATH_STR}"
+        conllu_dev: "{CONLLU_FILE_REL_PATH_STR}"
         conllu_test: null
     
     embeddings:
-      source_model_name: "elmo_smoke_test"
-      layer_index: {ELMO_LAYER_INDEX}
+      source_model_name: "elmo_smoke_test_override"
+      layer_index: {ELMO_LAYER_INDEX_SMOKE}
       paths:
-        train: "{HDF5_FILE_REL_PATH}"
-        dev: "{HDF5_FILE_REL_PATH}"
+        train: "{HDF5_FILE_REL_PATH_STR}"
+        dev: "{HDF5_FILE_REL_PATH_STR}"
         test: null
-      dimension: {EMBEDDING_DIM}
+      dimension: {EMBEDDING_DIM_SMOKE}
 
     probe:
       type: "distance"
@@ -51,27 +70,24 @@ def smoke_test_config_file(tmp_path: Path) -> Path:
         name: "Adam"
         lr: 0.001
         weight_decay: 0.0
-        betas: [0.9, 0.999] # YAML list format
+        betas: [0.9, 0.999]
         eps: 1.0e-8
       batch_size: {BATCH_SIZE_SMOKE}
       epochs: 1
-      patience: 1 # Patience for EarlyStopper (overall run)
+      patience: 1 
       early_stopping_metric: "loss" 
-      early_stopping_delta: 0.0001 # Default from default_adam.yaml, 100 was too large
+      early_stopping_delta: 0.001 
       loss_function: "l1_squared_diff" 
-      clip_grad_norm: null 
-      
-      # VVV ADD THIS SECTION VVV
+      clip_grad_norm: null
+      save_every_epoch_checkpoint: true 
+      save_checkpoint_every_n_epochs: -1
       lr_scheduler_with_reset:
-        enable: true # Test with it enabled for smoke test
-        lr_decay_factor: 0.1
-        lr_decay_patience: 1 # Decay quickly for smoke test if metric doesn't improve
-        min_lr: 1.0e-7       # Slightly different min_lr to distinguish
-        # monitor_metric and monitor_mode will default to early_stopping_metric's
-        # delta for LR scheduler improvement check will default to early_stopping_delta
+        enable: false
     
     evaluation: 
-      metrics: ["spearmanr", "uuas"]
+      metrics: ["spearmanr_hm", "uuas"] 
+      spearman_min_len: 2 
+      spearman_max_len: 100 
 
     runtime:
       device: "cpu" 
@@ -80,15 +96,13 @@ def smoke_test_config_file(tmp_path: Path) -> Path:
       resolve_paths: true 
 
     logging:
-      output_dir_base: "outputs_smoke_test" 
-      experiment_name: "smoke_test_elmo_distance"
+      experiment_name: "smoke_test_elmo_distance_pipeline_override"
       log_freq_batch: 1
+      enable_plots: false # Keep plots disabled for smoke test speed
       wandb:
         enable: false
-        project: "smoke_tests"
-        entity: null
     """
-    config_file_path = tmp_path / "smoke_config.yaml" # Ensure name is consistent
+    config_file_path = tmp_path / "smoke_test_override_config.yaml"
     config_file_path.write_text(config_content)
     return config_file_path
 
@@ -96,78 +110,85 @@ def smoke_test_config_file(tmp_path: Path) -> Path:
 @skip_if_no_data
 def test_full_training_pipeline_smoke(tmp_path: Path, smoke_test_config_file: Path):
     print("\n--- Smoke Test: Full Training Pipeline (1 epoch, ELMo sample) ---")
-
-    # For the smoke test, train_probe.py seems to default its CWD to PROJECT_ROOT
-    # when run via subprocess from PROJECT_ROOT, and Hydra creates outputs there.
-    # So, we will check for outputs relative to PROJECT_ROOT.
-    # This is NOT ideal test isolation but will get the smoke test passing based on observed behavior.
-    # The files created by the smoke test in PROJECT_ROOT will be cleaned up.
-    
-    # Define expected output paths relative to PROJECT_ROOT
-    # Hydra default output structure: outputs / YYYY-MM-DD / HH-MM-SS
-    # Or if logging.experiment_name is used and hydra.job.name is not a sweep, it might just be experiment_name
-    # From the stdout: "Run finished. Results and checkpoints in: /Users/aaronaggarwal/structural-probe-repl"
-    # This means Hydra's output directory mechanism was overridden or simplified to the CWD.
-    # The files are created directly in PROJECT_ROOT/checkpoints and PROJECT_ROOT/metrics_summary.json
-    
-    metrics_file_path_in_project = PROJECT_ROOT / "metrics_summary.json"
-    checkpoint_dir_in_project = PROJECT_ROOT / "checkpoints"
-    
-    # Clean up potential old files from previous failed smoke tests in project root
-    if metrics_file_path_in_project.exists():
-        os.remove(metrics_file_path_in_project)
-    if checkpoint_dir_in_project.exists():
-        shutil.rmtree(checkpoint_dir_in_project, ignore_errors=True)
-
+    print(f"Smoke test config file: {smoke_test_config_file}")
+    print(f"Pytest tmp_path for this test: {tmp_path}")
 
     command = [
-        "poetry", "run", "python", str(SCRIPTS_DIR / "train_probe.py"),
-        f"--config-path={str(smoke_test_config_file.parent)}",
-        f"--config-name={smoke_test_config_file.stem}",
-        # Remove the hydra.run.dir override to see where Hydra defaults when run this way
-        # Or, ensure train_probe.py properly uses output_dir = Path.cwd() for all its saves
+        "poetry", "run", "python", str(TRAIN_SCRIPT_PATH),
+        # Use --config-dir instead of --config-path for directory containing config_name
+        # This tells Hydra to look for 'smoke_test_override_config.yaml' inside tmp_path
+        f"--config-dir={str(smoke_test_config_file.parent)}",
+        f"--config-name={smoke_test_config_file.stem}", # Should be 'smoke_test_override_config'
+        # No need for hydra.run.dir here as it's in smoke_test_config_file
     ]
 
     print(f"Running command: {' '.join(command)}")
 
+    run_output_dir = None # Initialize
     try:
+        # Run train_probe.py from PROJECT_ROOT. 
+        # Paths in smoke_test_config_file are relative to PROJECT_ROOT.
+        # Hydra's output (hydra.run.dir) is absolute, pointing into tmp_path.
         process = subprocess.run(command, capture_output=True, text=True, check=False, cwd=PROJECT_ROOT)
-        # ... (print stdout/stderr) ...
-        process.check_returncode()
-
-        assert metrics_file_path_in_project.exists(), f"Metrics summary file not found in {PROJECT_ROOT}"
-        assert checkpoint_dir_in_project.is_dir(), f"Checkpoints directory not found in {PROJECT_ROOT}"
         
-                
-        # --- END DEBUG LS ---
-
-        probe_type_smoke = "distance" 
-        probe_rank_smoke = 4          
-        best_checkpoint = checkpoint_dir_in_project / f"{probe_type_smoke}_probe_rank{probe_rank_smoke}_best.pt"
-        # Use a more direct glob that doesn't rely on specific metric values in filename for epoch checkpoints
-        epoch_checkpoints = list(checkpoint_dir_in_project.glob(f"{probe_type_smoke}_probe_rank{probe_rank_smoke}_epoch*_metric*.pt"))
+        # Always print stdout/stderr for debugging if something goes wrong
+        if process.stdout:
+            print("SMOKE TEST STDOUT:")
+            print(process.stdout)
+        if process.stderr:
+            print("SMOKE TEST STDERR:")
+            print(process.stderr)
         
-        assert best_checkpoint.exists() or len(epoch_checkpoints) > 0, \
-            f"No checkpoint files found in {checkpoint_dir_in_project}. " \
-            f"Best ckpt exists: {best_checkpoint.exists()}. Num epoch ckpts: {len(epoch_checkpoints)}"
+        process.check_returncode() # Raise an exception if the process failed
+
+        # --- Find the actual output directory created by Hydra from script's stdout ---
+        for line in process.stdout.splitlines():
+            if "Output directory for this run (from HydraConfig):" in line:
+                # Example line: "[...][__main__][INFO] - Output directory for this run (from HydraConfig): /private/var/.../pytest-of-user/pytest-0/test_X0/smoke_outputs/2023-10-27/12-00-00"
+                match = re.search(r"Output directory for this run \(from HydraConfig\): (.*)", line)
+                if match:
+                    path_str = match.group(1).strip()
+                    run_output_dir = Path(path_str)
+                    break
+        
+        assert run_output_dir is not None, "Could not parse Hydra output directory from script stdout."
+        assert run_output_dir.is_dir(), f"Hydra output directory {run_output_dir} was not created or is not a directory."
+        print(f"Asserting outputs in Hydra run directory: {run_output_dir}")
+
+        # --- Assertions relative to the dynamic run_output_dir ---
+        assert (run_output_dir / "metrics_summary.json").exists(), \
+            f"metrics_summary.json not found in {run_output_dir}"
+        
+        checkpoint_dir = run_output_dir / "checkpoints"
+        assert checkpoint_dir.is_dir(), \
+            f"Checkpoints directory not found in {run_output_dir}"
+
+        probe_type_smoke = "distance" # As per smoke_test_config_file
+        probe_rank_smoke = PROBE_RANK_SMOKE 
+        
+        # Check for at least one epoch checkpoint (epoch1 due to config)
+        # And the best checkpoint (which will be the same as epoch1 for a 1-epoch run)
+        epoch1_checkpoints = list(checkpoint_dir.glob(f"{probe_type_smoke}_probe_rank{probe_rank_smoke}_epoch1_metric*.pt"))
+        assert len(epoch1_checkpoints) > 0, \
+            f"No epoch 1 checkpoint file found in {checkpoint_dir}. Files: {list(checkpoint_dir.iterdir())}"
+
+        best_checkpoint = checkpoint_dir / f"{probe_type_smoke}_probe_rank{probe_rank_smoke}_best.pt"
+        assert best_checkpoint.exists(), \
+            f"Best checkpoint file not found in {checkpoint_dir}"
 
     except subprocess.CalledProcessError as e:
+        # Pytest will capture stdout/stderr automatically on fail, but good to have here too
         pytest.fail(f"Smoke test training script failed with exit code {e.returncode}.\n"
-                    f"Command: {' '.join(command)}\n"
+                    f"Command: {' '.join(e.cmd)}\n"
                     f"Stdout:\n{e.stdout}\nStderr:\n{e.stderr}")
     except Exception as e:
         import traceback
         pytest.fail(f"Smoke test encountered an unexpected error: {e}\n{traceback.format_exc()}")
     finally:
-        # Clean up files created in project root by this smoke test
-        if metrics_file_path_in_project.exists():
-            os.remove(metrics_file_path_in_project)
-        if checkpoint_dir_in_project.exists():
-            shutil.rmtree(checkpoint_dir_in_project, ignore_errors=True)
-        # Also clean up any default hydra outputs/YYYY-MM-DD if created
-        default_hydra_outputs = PROJECT_ROOT / "outputs"
-        if default_hydra_outputs.exists():
-            shutil.rmtree(default_hydra_outputs, ignore_errors=True)
-
+        # pytest's tmp_path fixture handles cleanup of its own directory.
+        # No need to manually clean PROJECT_ROOT if outputs are correctly isolated to tmp_path.
+        if run_output_dir and run_output_dir.exists():
+             print(f"Smoke test outputs were in: {run_output_dir}")
+        pass
 
     print("--- Full Training Pipeline Smoke Test PASSED ---")

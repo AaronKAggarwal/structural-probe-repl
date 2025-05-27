@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 import tempfile # For creating temporary files
 
-from src.torch_probe.utils.conllu_reader import read_conllu_file # Adjust import if structure differs
+from src.torch_probe.utils.conllu_reader import read_conll_file # Adjust import if structure differs
 
 @pytest.fixture
 def sample_conllu_file_fixture():
@@ -34,7 +34,7 @@ def sample_conllu_file_fixture():
     Path(filepath).unlink() # Clean up
 
 def test_read_simple_sentence(sample_conllu_file_fixture):
-    sentences = read_conllu_file(sample_conllu_file_fixture)
+    sentences = read_conll_file(sample_conllu_file_fixture)
     assert len(sentences) == 2
     
     # Test sentence 1
@@ -45,7 +45,7 @@ def test_read_simple_sentence(sample_conllu_file_fixture):
     assert sent1['dep_rels'] == ['nsubj', 'cop', 'det', 'root', 'punct']
 
 def test_read_mwt_sentence(sample_conllu_file_fixture):
-    sentences = read_conllu_file(sample_conllu_file_fixture)
+    sentences = read_conll_file(sample_conllu_file_fixture)
     # Test sentence 2 (with MWT)
     sent2 = sentences[1]
     assert sent2['tokens'] == ['Multi', '-', 'word', 'tokens', 'are', 'handled', '.']

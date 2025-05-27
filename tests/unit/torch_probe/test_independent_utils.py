@@ -32,7 +32,7 @@ if SRC_PATH.is_dir() and str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 # Now the actual imports we wish to test
-from torch_probe.utils.conllu_reader import read_conllu_file  # noqa: E402
+from torch_probe.utils.conllu_reader import read_conll_file  # noqa: E402
 from torch_probe.utils.gold_labels import (  # noqa: E402
     calculate_tree_depths,
     calculate_tree_distances,
@@ -50,7 +50,7 @@ def _write_conllu(tmp_path: pathlib.Path, content: str) -> pathlib.Path:
 
 
 # ---------------------------------------------------------------------------
-# Tests for ``read_conllu_file``
+# Tests for ``read_conll_file``
 # ---------------------------------------------------------------------------
 
 
@@ -67,7 +67,7 @@ def test_read_conllu_simple_sentence(tmp_path: pathlib.Path) -> None:
         """,
     )
 
-    sentences = read_conllu_file(conllu)
+    sentences = read_conll_file(conllu)
     assert len(sentences) == 1
 
     sent = sentences[0]
@@ -89,7 +89,7 @@ def test_read_conllu_sentence_boundaries(tmp_path: pathlib.Path) -> None:
         1\tBye\t_\tINTJ\t_\t_\t0\troot\t_\t_
         """,
     )
-    sentences = read_conllu_file(conllu)
+    sentences = read_conll_file(conllu)
     assert [s["tokens"] for s in sentences] == [["Hi"], ["Bye"]]
 
 
@@ -101,7 +101,7 @@ def test_read_conllu_skips_comments(tmp_path: pathlib.Path) -> None:
         1\tHello\t_\tINTJ\t_\t_\t0\troot\t_\t_
         """,
     )
-    sentences = read_conllu_file(conllu)
+    sentences = read_conll_file(conllu)
     assert len(sentences) == 1 and sentences[0]["tokens"] == ["Hello"]
 
 
@@ -116,7 +116,7 @@ def test_read_conllu_handles_mwt(tmp_path: pathlib.Path) -> None:
         2\t's\t_\tAUX\t_\t_\t0\troot\t_\t_
         """,
     )
-    sent = read_conllu_file(conllu)[0]
+    sent = read_conll_file(conllu)[0]
     assert sent["tokens"] == ["Let", "'s"]
     # head indices were 2,0  →  1,‑1
     assert sent["head_indices"] == [1, -1]
@@ -125,7 +125,7 @@ def test_read_conllu_handles_mwt(tmp_path: pathlib.Path) -> None:
 def test_read_conllu_empty_file(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "empty.conllu"
     path.touch()
-    assert read_conllu_file(path) == []
+    assert read_conll_file(path) == []
 
 
 def test_read_conllu_malformed_lines_are_ignored(tmp_path: pathlib.Path) -> None:
@@ -138,7 +138,7 @@ def test_read_conllu_malformed_lines_are_ignored(tmp_path: pathlib.Path) -> None
         4\t!\t_\tPUNCT\t_\t_\t1\tpunct\t_\t_
         """,
     )
-    sent = read_conllu_file(conllu)[0]
+    sent = read_conll_file(conllu)[0]
     # The malformed line should not appear; total tokens = 3
     assert sent["tokens"] == ["Good", "data", "!"]
     assert sent["head_indices"] == [-1, 0, 0]

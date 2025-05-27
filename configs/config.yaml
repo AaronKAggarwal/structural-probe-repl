@@ -57,6 +57,8 @@ training: # This section will be populated by the chosen file from `configs/trai
   early_stopping_delta: 0.001   # Minimum change to be considered an improvement
   loss_function: "l1_squared_diff" 
   clip_grad_norm: null # e.g., 1.0 or null
+  save_every_epoch_checkpoint: false # Default: only save best and Nth epoch (if configured)
+  save_checkpoint_every_n_epochs: -1   # Default: -1 (disabled). Set to N > 0 to save every Nth epoch.
 
 # --- Evaluation related (placeholders/defaults) ---
 evaluation: # This section will be populated by the chosen file from `configs/evaluation/`
@@ -71,6 +73,7 @@ runtime:
 
 # --- Logging settings ---
 logging:
+  enable_plots: true # If true, plots will be saved as images
   # Hydra automatically creates output directories.
   # Default pattern: outputs/YYYY-MM-DD/HH-MM-SS/
   # We can customize this further using hydra.job.name, hydra.run.dir, etc.
