@@ -32,13 +32,13 @@ def calculate_spearmanr(
     all_gold_labels: List[np.ndarray], 
     all_lengths: List[int],
     probe_type: str
-) -> float:
+) -> tuple[float, list[float]]:
     if not all_predictions or not all_gold_labels or not all_lengths:
-        return 0.0
+        return 0.0, []
     if not (len(all_predictions) == len(all_gold_labels) == len(all_lengths)):
         raise ValueError("Input lists (predictions, gold_labels, lengths) must have the same length.")
 
-    sentence_level_rhos = [] 
+    sentence_level_rhos: list[float] = []
 
     for i in range(len(all_predictions)):
         pred_data_sent_full = all_predictions[i] # Full array, possibly with padding
@@ -94,11 +94,12 @@ def calculate_spearmanr(
                 sentence_level_rhos.append(np.mean(per_word_rhos_in_sentence))
         else:
             raise ValueError(f"Unknown probe_type for Spearman: {probe_type}")
-            
+
     if not sentence_level_rhos:
-        return 0.0
-    
-    return np.mean(sentence_level_rhos).item()
+        return 0.0, []
+
+    mean_rho = np.mean(sentence_level_rhos).item() if sentence_level_rhos else 0.0
+    return mean_rho, sentence_level_rhos
 
 
 def calculate_uuas(
@@ -106,18 +107,19 @@ def calculate_uuas(
     all_gold_head_indices: List[List[int]],
     all_lengths: List[int],
     all_upos_tags: List[List[str]]
-) -> float:
+) -> tuple[float, list[float]]:
     if not all_predicted_distances or not all_gold_head_indices or \
        not all_lengths or not all_upos_tags:
-        return 0.0
+        return 0.0, []
     if not (len(all_predicted_distances) == len(all_gold_head_indices) == \
             len(all_lengths) == len(all_upos_tags)):
         raise ValueError("Input lists for UUAS must have the same length.")
 
-    total_sentences = len(all_predicted_distances) 
+    total_sentences = len(all_predicted_distances)
     if total_sentences == 0:
-        return 0.0
+        return 0.0, []
 
+    all_sentence_uuas: list[float] = []
     total_uuas_score = 0.0
     num_evaluable_sentences = 0
 
@@ -174,10 +176,12 @@ def calculate_uuas(
                 pass 
 
         correct_edges = len(gold_edges_non_punct.intersection(predicted_edges_non_punct))
-        sentence_uuas = correct_edges / len(gold_edges_non_punct) 
+        sentence_uuas = correct_edges / len(gold_edges_non_punct)
+        all_sentence_uuas.append(sentence_uuas)
         total_uuas_score += sentence_uuas
-            
-    return total_uuas_score / num_evaluable_sentences if num_evaluable_sentences > 0 else 0.0
+
+    mean_uuas = total_uuas_score / num_evaluable_sentences if num_evaluable_sentences > 0 else 0.0
+    return mean_uuas, all_sentence_uuas
 
 
 def calculate_root_accuracy(
@@ -185,18 +189,19 @@ def calculate_root_accuracy(
     all_gold_head_indices: List[List[int]],
     all_lengths: List[int],
     all_upos_tags: List[List[str]]
-) -> float:
+) -> tuple[float, list[float]]:
     if not all_predicted_depths or not all_gold_head_indices or \
        not all_lengths or not all_upos_tags:
-        return 0.0
+        return 0.0, []
     if not (len(all_predicted_depths) == len(all_gold_head_indices) == \
             len(all_lengths) == len(all_upos_tags)):
         raise ValueError("Input lists for Root Accuracy must have the same length.")
 
     total_sentences = len(all_predicted_depths)
     if total_sentences == 0:
-        return 0.0
+        return 0.0, []
 
+    sentence_level_root_outcomes: list[float] = []
     correct_roots = 0
     num_evaluable_sentences = 0
 
@@ -233,8 +238,16 @@ def calculate_root_accuracy(
             num_evaluable_sentences += 1
             if predicted_root_original_idx == actual_root_original_idx:
                 correct_roots += 1
-    
-    return correct_roots / num_evaluable_sentences if num_evaluable_sentences > 0 else 0.0
+                sentence_level_root_outcomes.append(1.0)
+            else:
+                sentence_level_root_outcomes.append(0.0)
+        # else:
+            # If there's no gold root, this sentence doesn't contribute to sentence_level_root_outcomes
+            # Or, if we want to include all sentences that were attempted, we could append a specific value e.g. np.nan
+            # For now, only evaluable sentences (those with a gold root) contribute to the list
+
+    mean_accuracy = correct_roots / num_evaluable_sentences if num_evaluable_sentences > 0 else 0.0
+    return mean_accuracy, sentence_level_root_outcomes
 
 
 def evaluate_probe(
@@ -243,8 +256,8 @@ def evaluate_probe(
     loss_fn: Callable, 
     device: torch.device, 
     probe_type: str,
-) -> Dict[str, float]:
-    probe_model.eval() 
+) -> Dict[str, Any]: # Changed to Dict[str, Any] to accommodate lists of scores
+    probe_model.eval()
     total_loss = 0.0
     num_batches = 0
 
@@ -290,22 +303,42 @@ def evaluate_probe(
                     all_predictions_np.append(predictions_b[i, :length].cpu().numpy())
                     all_gold_labels_np.append(labels_b_for_loss[i, :length].cpu().numpy()) 
     
-    metrics = {"loss": total_loss / num_batches if num_batches > 0 else 0.0}
-    
+    metrics: Dict[str, Any] = {"loss": total_loss / num_batches if num_batches > 0 else 0.0}
+
     if all_predictions_np:
-        spearman = calculate_spearmanr(all_predictions_np, all_gold_labels_np, all_lengths_list, probe_type)
-        metrics["spearmanr"] = spearman
+        mean_spearman, per_sentence_spearman = calculate_spearmanr(
+            all_predictions_np, all_gold_labels_np, all_lengths_list, probe_type
+        )
+        metrics["spearmanr"] = mean_spearman
+        metrics["spearmanr_per_sentence"] = per_sentence_spearman
 
         if probe_type == "distance":
-            uuas = calculate_uuas(all_predictions_np, all_gold_head_indices_list, all_lengths_list, all_upos_tags_list)
-            metrics["uuas"] = uuas
+            mean_uuas, per_sentence_uuas = calculate_uuas(
+                all_predictions_np, all_gold_head_indices_list, all_lengths_list, all_upos_tags_list
+            )
+            metrics["uuas"] = mean_uuas
+            metrics["uuas_per_sentence"] = per_sentence_uuas
+            # Ensure other probe type metrics are not carried over if not applicable
+            metrics.pop("root_acc", None) 
+            metrics.pop("root_acc_per_sentence", None)
         elif probe_type == "depth":
-            root_acc = calculate_root_accuracy(all_predictions_np, all_gold_head_indices_list, all_lengths_list, all_upos_tags_list)
-            metrics["root_acc"] = root_acc
-    else: 
+            mean_root_acc, per_sentence_root_acc = calculate_root_accuracy(
+                all_predictions_np, all_gold_head_indices_list, all_lengths_list, all_upos_tags_list
+            )
+            metrics["root_acc"] = mean_root_acc
+            metrics["root_acc_per_sentence"] = per_sentence_root_acc
+            # Ensure other probe type metrics are not carried over if not applicable
+            metrics.pop("uuas", None)
+            metrics.pop("uuas_per_sentence", None)
+    else:
         metrics["spearmanr"] = 0.0
-        if probe_type == "distance": metrics["uuas"] = 0.0
-        if probe_type == "depth": metrics["root_acc"] = 0.0
+        metrics["spearmanr_per_sentence"] = []
+        if probe_type == "distance":
+            metrics["uuas"] = 0.0
+            metrics["uuas_per_sentence"] = []
+        if probe_type == "depth":
+            metrics["root_acc"] = 0.0
+            metrics["root_acc_per_sentence"] = []
             
     return metrics
 
@@ -317,33 +350,33 @@ if __name__ == '__main__':
     preds_s_depth = [np.array([0., 1., 2.]), np.array([0., 1.])]
     golds_s_depth = [np.array([0., 1., 2.]), np.array([5., 6.])]
     lengths_s_depth = [3, 2]
-    spear_depth = calculate_spearmanr(preds_s_depth, golds_s_depth, lengths_s_depth, "depth")
-    print(f"Spearman (depth-like, expected 1.0): {spear_depth}") 
+    mean_spear_depth, ps_spear_depth = calculate_spearmanr(preds_s_depth, golds_s_depth, lengths_s_depth, "depth")
+    print(f"Spearman (depth-like, mean expected 1.0): {mean_spear_depth}, Per-sentence: {ps_spear_depth}")
 
     # Spearman Test (Distance)
     preds_s_dist = [np.array([[0,1,2],[1,0,3],[2,3,0]], dtype=np.float32)] 
     golds_s_dist = [np.array([[0,1.5,2.5],[1.5,0,3.5],[2.5,3.5,0]], dtype=np.float32)]
     lengths_s_dist = [3]
-    spear_dist = calculate_spearmanr(preds_s_dist, golds_s_dist, lengths_s_dist, "distance")
-    print(f"Spearman (distance-like, expected 1.0): {spear_dist}")
+    mean_spear_dist, ps_spear_dist = calculate_spearmanr(preds_s_dist, golds_s_dist, lengths_s_dist, "distance")
+    print(f"Spearman (distance-like, mean expected 1.0): {mean_spear_dist}, Per-sentence: {ps_spear_dist}")
 
 
     # UUAS Test
     pred_dists_u = [np.array([[0, 0.5, 2.0], [0.5, 0, 0.4], [2.0, 0.4, 0]], dtype=np.float32)]
-    gold_heads_u = [[-1, 0, 1]] 
+    gold_heads_u = [[-1, 0, 1]]
     lengths_u = [3]
     upos_u: List[List[str]] = [["NOUN", "VERB", "NOUN"]]
-    uuas = calculate_uuas(pred_dists_u, gold_heads_u, lengths_u, upos_u)
-    print(f"UUAS (expected 1.0): {uuas}")
+    mean_uuas, ps_uuas = calculate_uuas(pred_dists_u, gold_heads_u, lengths_u, upos_u)
+    print(f"UUAS (mean expected 1.0): {mean_uuas}, Per-sentence: {ps_uuas}")
 
     # Root Accuracy Test
-    pred_depths_r = [np.array([0.1, 0.5, 0.3])] 
-    gold_heads_r = [[-1, 0, 0]] 
+    pred_depths_r = [np.array([0.1, 0.5, 0.3])]
+    gold_heads_r = [[-1, 0, 0]]
     lengths_r = [3]
     upos_r: List[List[str]] = [["NOUN", "VERB", "ADJ"]]
-    root_acc = calculate_root_accuracy(pred_depths_r, gold_heads_r, lengths_r, upos_r)
-    print(f"Root Accuracy (expected 1.0): {root_acc}") 
+    mean_root_acc, ps_root_acc = calculate_root_accuracy(pred_depths_r, gold_heads_r, lengths_r, upos_r)
+    print(f"Root Accuracy (mean expected 1.0): {mean_root_acc}, Per-sentence: {ps_root_acc}")
     
-    pred_depths_r2 = [np.array([0.5, 0.1, 0.3])] 
-    root_acc2 = calculate_root_accuracy(pred_depths_r2, gold_heads_r, lengths_r, upos_r)
-    print(f"Root Accuracy (wrong root, expected 0.0): {root_acc2}")
+    pred_depths_r2 = [np.array([0.5, 0.1, 0.3])]
+    mean_root_acc2, ps_root_acc2 = calculate_root_accuracy(pred_depths_r2, gold_heads_r, lengths_r, upos_r)
+    print(f"Root Accuracy (wrong root, mean expected 0.0): {mean_root_acc2}, Per-sentence: {ps_root_acc2}")

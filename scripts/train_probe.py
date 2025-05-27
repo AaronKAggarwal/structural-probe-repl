@@ -10,6 +10,7 @@ import logging
 import json 
 import sys 
 from typing import Optional, Dict, Any # Added for clarity
+from hydra.core.hydra_config import HydraConfig
 
 # --- Add src to path for direct execution ---
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -24,7 +25,15 @@ try:
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-    wandb = None 
+    wandb = None
+
+try:
+    import matplotlib.pyplot as plt
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    plt = None
+    # log.warning("Matplotlib not found. Plots will not be generated.") # Logged later if needed
 
 from torch_probe.dataset import ProbeDataset, collate_probe_batch
 from torch_probe.probe_models import DistanceProbe, DepthProbe
@@ -42,14 +51,49 @@ def set_seeds(seed: int):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-@hydra.main(config_path="../configs", config_name="config", version_base=None)
+@hydra.main(config_path="../configs", config_name="config", version_base="1.3")
 def train(cfg: DictConfig) -> Optional[float]:
     
-    output_dir = Path.cwd() 
-    log.info(f"Hydra output directory: {output_dir}")
-    original_cwd = hydra.utils.get_original_cwd()
-    log.info(f"Original working directory: {original_cwd}")
-    # log.info(f"Loaded config:\n{OmegaConf.to_yaml(cfg)}") # Can be very verbose
+    # --- Get Hydra's runtime configuration ---
+    hydra_cfg = HydraConfig.get()
+
+    # --- Output Directory Determination & CWD Logging ---
+    output_dir = Path(hydra_cfg.runtime.output_dir)
+    original_cwd = Path(hydra_cfg.runtime.cwd)
+    current_process_cwd = Path.cwd()
+
+    log.info(f"Output directory for this run (from HydraConfig): {output_dir}")
+    log.info(f"Original CWD (script launch location): {original_cwd}")
+    log.info(f"Process CWD after @hydra.main decorator: {current_process_cwd}")
+
+    # Check and log chdir status
+    # Use OmegaConf.select for safer access to potentially missing chdir attribute
+    # if hydra_cfg.job itself is not fully populated by defaults (though it should be now with config.yaml update)
+    job_cfg_from_hydraconfig = OmegaConf.select(hydra_cfg, "job", default=None)
+    chdir_status = None
+    if job_cfg_from_hydraconfig:
+        chdir_status = OmegaConf.select(job_cfg_from_hydraconfig, "chdir", default=None)
+
+    if chdir_status is True: # Explicitly True
+        if current_process_cwd == output_dir:
+            log.info(f"Hydra CWD successfully changed to output directory: {current_process_cwd}")
+        else:
+            # This case should ideally not happen if chdir is True and worked
+            log.warning(
+                f"HydraConfig indicates job.chdir=TRUE, but CWD ({current_process_cwd}) "
+                f"does NOT match runtime output_dir ({output_dir}). Using explicit output_dir for saves."
+            )
+    else: # chdir is False, None, or job config group is missing
+        log.warning(
+            f"Hydra job.chdir is '{chdir_status}'. CWD was NOT changed by Hydra from '{original_cwd}'. "
+            f"Process CWD remains: {current_process_cwd}. "
+            f"All outputs will be relative to the designated output_dir: {output_dir}"
+        )
+    # --- End Output Directory Determination & CWD Logging ---
+
+    # Ensure output_dir exists (Hydra usually creates it if chdir=true, but good practice)
+    # This line is crucial if CWD didn't change but output_dir points to a new path.
+    output_dir.mkdir(parents=True, exist_ok=True) 
 
     set_seeds(cfg.runtime.seed)
 
@@ -163,8 +207,16 @@ def train(cfg: DictConfig) -> Optional[float]:
     log.info(f"Initial best_dev_metric_for_checkpointing set to: {best_dev_metric_value_for_checkpointing}") # Add for debug
     log.info("Starting training...")
 
+    # Initialize lists for plotting
+    epoch_train_losses = []
+    epoch_dev_losses = []
+    epoch_dev_primary_metrics = []
+    epochs_list = []
+    last_epoch_completed = 0 # To keep track of actual epochs run if early stopping occurs
+
     # Training loop
     for epoch in range(cfg.training.epochs):
+        last_epoch_completed = epoch + 1
         log.info(f"--- Epoch {epoch+1}/{cfg.training.epochs} ---")
         probe_model.train()
         epoch_train_loss = 0.0; num_train_batches = 0
@@ -195,23 +247,82 @@ def train(cfg: DictConfig) -> Optional[float]:
         wandb_log_data = {"epoch": epoch + 1, "avg_epoch_train_loss": avg_train_loss, "current_lr": optimizer.param_groups[0]['lr']}
 
         log.info(f"Running validation for epoch {epoch+1}...")
-        dev_metrics = evaluate_probe(probe_model, dev_loader, loss_fn, device, cfg.probe.type)
+        # Note: probe_model.eval() is called inside evaluate_probe
+        dev_metrics_full = evaluate_probe(probe_model, dev_loader, loss_fn, device, cfg.probe.type)
         
-        log_msg = f"Epoch {epoch+1} Dev Metrics: "
-        for k, v_met in dev_metrics.items(): log_msg += f"{k}: {v_met:.4f} "
+        dev_detailed_metrics_data = {}
+        dev_summary_metrics = {}
+        for k, v_met in dev_metrics_full.items():
+            if "_per_sentence" in k:
+                dev_detailed_metrics_data[k] = v_met
+            else:
+                dev_summary_metrics[k] = v_met
+        
+        log_msg = f"Epoch {epoch+1} Dev Metrics (Summary): "
+        for k, v_met in dev_summary_metrics.items(): log_msg += f"{k}: {v_met:.4f} "
         log.info(log_msg)
 
-        wandb_dev_metrics = {f"dev_{k}": v_met for k,v_met in dev_metrics.items()}
+        dev_detailed_metrics_path = output_dir / "dev_detailed_metrics.json"
+        with open(dev_detailed_metrics_path, "w") as f:
+            json.dump(dev_detailed_metrics_data, f, indent=2)
+        log.info(f"Saved detailed dev metrics to {dev_detailed_metrics_path}")
+
+        if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+            dev_artifact = wandb.Artifact(name=f'dev_detailed_metrics_epoch_{epoch+1}', type='metrics')
+            dev_artifact.add_file(dev_detailed_metrics_path)
+            wandb.log_artifact(dev_artifact)
+            log.info(f"Logged {dev_detailed_metrics_path} as W&B artifact.")
+
+        wandb_dev_metrics = {f"dev_{k}": v_met for k,v_met in dev_summary_metrics.items()} # Log summary to W&B
         wandb_log_data.update(wandb_dev_metrics)
         if cfg.logging.wandb.enable and wandb.run: wandb.log(wandb_log_data)
 
-        current_dev_metric_to_monitor = dev_metrics.get(monitor_metric)
+        # --- Start: Evaluate on Training Set (after dev eval for the epoch) ---
+        log.info(f"Running evaluation on training set for epoch {epoch+1}...")
+        # Ensure model is in eval mode if it was changed by other evaluations, though evaluate_probe does this.
+        # probe_model.eval() # evaluate_probe sets this, so not strictly necessary here.
+        train_eval_metrics_full = evaluate_probe(probe_model, train_loader, loss_fn, device, cfg.probe.type)
+        
+        train_eval_detailed_metrics_data = {}
+        train_eval_summary_metrics = {}
+        for k, v_met in train_eval_metrics_full.items():
+            if "_per_sentence" in k:
+                train_eval_detailed_metrics_data[k] = v_met
+            else:
+                train_eval_summary_metrics[k] = v_met
+        
+        log_msg_train_eval = f"Epoch {epoch+1} Train Eval Metrics (Summary): "
+        for k, v_met in train_eval_summary_metrics.items(): log_msg_train_eval += f"{k}: {v_met:.4f} "
+        log.info(log_msg_train_eval)
+
+        train_detailed_metrics_path = output_dir / "train_detailed_metrics.json" # Overwritten each epoch
+        with open(train_detailed_metrics_path, "w") as f:
+            json.dump(train_eval_detailed_metrics_data, f, indent=2)
+        log.info(f"Saved detailed train set evaluation metrics to {train_detailed_metrics_path}")
+
+        if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+            train_eval_artifact = wandb.Artifact(name=f'train_detailed_metrics_epoch_{epoch+1}', type='metrics')
+            train_eval_artifact.add_file(train_detailed_metrics_path)
+            wandb.log_artifact(train_eval_artifact)
+            log.info(f"Logged {train_detailed_metrics_path} as W&B artifact.")
+            # Log summary of train eval to W&B, already part of wandb_log_data or a separate log call
+            wandb_train_eval_metrics_log = {f"train_eval_{k}": v_met for k, v_met in train_eval_summary_metrics.items()}
+            wandb.log(wandb_train_eval_metrics_log) 
+        # --- End: Evaluate on Training Set ---
+
+        current_dev_metric_to_monitor = dev_summary_metrics.get(monitor_metric)
         if current_dev_metric_to_monitor is None:
             log.warning(f"Monitor metric '{monitor_metric}' not found in dev_metrics. Using 'loss' for decisions.")
-            current_dev_metric_to_monitor = dev_metrics["loss"]
+            current_dev_metric_to_monitor = dev_summary_metrics["loss"]
             effective_monitor_mode = "min" # Loss is always minimized
         else:
             effective_monitor_mode = monitor_mode
+
+        # Populate lists for plotting
+        epochs_list.append(epoch + 1)
+        epoch_train_losses.append(avg_train_loss)
+        epoch_dev_losses.append(dev_summary_metrics["loss"])
+        epoch_dev_primary_metrics.append(current_dev_metric_to_monitor)
         
         is_best_for_checkpoint = False
         if effective_monitor_mode == "max":
@@ -244,7 +355,10 @@ def train(cfg: DictConfig) -> Optional[float]:
             break
     
     log.info("Training finished.")
-    final_metrics_summary: Dict[str, Any] = {"best_dev_monitored_metric_value": early_stopper.best_actual_metric} 
+    final_metrics_summary: Dict[str, Any] = {
+        "best_dev_monitored_metric_value": early_stopper.best_actual_metric,
+        "epochs_completed": last_epoch_completed
+    }
 
     best_checkpoint_filename = f"{cfg.probe.type}_probe_rank{cfg.probe.rank}_best.pt"
     best_checkpoint_path = output_dir / "checkpoints" / best_checkpoint_filename
@@ -272,12 +386,33 @@ def train(cfg: DictConfig) -> Optional[float]:
                 embedding_dim=actual_embedding_dim
             )
             test_loader = DataLoader(test_dataset, batch_size=cfg.training.batch_size, collate_fn=collate_probe_batch)
-            test_metrics = evaluate_probe(probe_model, test_loader, loss_fn, device, cfg.probe.type)
-            log_msg_test = f"Test Metrics with best/final model: "
-            for k, v_met in test_metrics.items(): log_msg_test += f"{k}: {v_met:.4f} "
+            test_metrics_full = evaluate_probe(probe_model, test_loader, loss_fn, device, cfg.probe.type)
+            
+            test_detailed_metrics_data = {}
+            test_summary_metrics = {}
+            for k, v_met in test_metrics_full.items():
+                if "_per_sentence" in k:
+                    test_detailed_metrics_data[k] = v_met
+                else:
+                    test_summary_metrics[k] = v_met
+
+            log_msg_test = f"Test Metrics with best/final model (Summary): "
+            for k, v_met in test_summary_metrics.items(): log_msg_test += f"{k}: {v_met:.4f} "
             log.info(log_msg_test)
-            if cfg.logging.wandb.enable and wandb.run: wandb.log({f"final_test_{k}": v_met for k,v_met in test_metrics.items()})
-            final_metrics_summary.update({f"test_{k}": v_met for k,v_met in test_metrics.items()})
+
+            test_detailed_metrics_path = output_dir / "test_detailed_metrics.json"
+            with open(test_detailed_metrics_path, "w") as f:
+                json.dump(test_detailed_metrics_data, f, indent=2)
+            log.info(f"Saved detailed test metrics to {test_detailed_metrics_path}")
+
+            if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+                test_artifact = wandb.Artifact(name='test_detailed_metrics', type='metrics')
+                test_artifact.add_file(test_detailed_metrics_path)
+                wandb.log_artifact(test_artifact)
+                log.info(f"Logged {test_detailed_metrics_path} as W&B artifact.")
+                wandb.log({f"final_test_{k}": v_met for k,v_met in test_summary_metrics.items()}) # Log summary to W&B
+
+            final_metrics_summary.update({f"test_{k}": v_met for k,v_met in test_summary_metrics.items()}) # Store summary
             test_dataset.close_hdf5()
         except Exception as e:
             log.error(f"Error during test set evaluation: {e}", exc_info=True)
@@ -288,6 +423,57 @@ def train(cfg: DictConfig) -> Optional[float]:
     with open(summary_path, "w") as f:
         json.dump(final_metrics_summary, f, indent=2)
     log.info(f"Final metrics summary saved to {summary_path}")
+
+    # --- Plotting ---
+    if cfg.logging.get("enable_plots", True): # Allow disabling plots via config if desired
+        if MATPLOTLIB_AVAILABLE and plt is not None:
+            log.info("Generating plots...")
+            
+            # Training Loss vs. Epoch
+            plt.figure()
+            plt.plot(epochs_list, epoch_train_losses, marker='o')
+            plt.title("Training Loss vs. Epoch")
+            plt.xlabel("Epoch")
+            plt.ylabel("Training Loss")
+            plot_path_train_loss = output_dir / "training_loss_vs_epoch.png"
+            plt.savefig(plot_path_train_loss)
+            plt.close()
+            log.info(f"Saved training loss plot to {plot_path_train_loss}")
+            if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+                wandb.log({"training_loss_curve": wandb.Image(str(plot_path_train_loss))})
+
+            # Dev Loss vs. Epoch
+            plt.figure()
+            plt.plot(epochs_list, epoch_dev_losses, marker='o')
+            plt.title("Development Loss vs. Epoch")
+            plt.xlabel("Epoch")
+            plt.ylabel("Development Loss")
+            plot_path_dev_loss = output_dir / "dev_loss_vs_epoch.png"
+            plt.savefig(plot_path_dev_loss)
+            plt.close()
+            log.info(f"Saved dev loss plot to {plot_path_dev_loss}")
+            if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+                wandb.log({"dev_loss_curve": wandb.Image(str(plot_path_dev_loss))})
+
+            # Primary Dev Metric vs. Epoch
+            plt.figure()
+            plt.plot(epochs_list, epoch_dev_primary_metrics, marker='o')
+            plt.title(f"Dev {monitor_metric} vs. Epoch")
+            plt.xlabel("Epoch")
+            plt.ylabel(f"Dev {monitor_metric}")
+            plot_path_dev_metric = output_dir / "dev_metric_vs_epoch.png"
+            plt.savefig(plot_path_dev_metric)
+            plt.close()
+            log.info(f"Saved dev {monitor_metric} plot to {plot_path_dev_metric}")
+            if cfg.logging.wandb.enable and WANDB_AVAILABLE and wandb.run:
+                wandb.log({f"dev_{monitor_metric}_curve": wandb.Image(str(plot_path_dev_metric))})
+            
+            log.info("Plot generation complete.")
+        elif not MATPLOTLIB_AVAILABLE:
+            log.warning("Matplotlib not found, but plotting was requested/enabled. Plots will not be generated.")
+    else:
+        log.info("Plotting is disabled via configuration.")
+    # --- End Plotting ---
 
     train_dataset.close_hdf5()
     dev_dataset.close_hdf5()

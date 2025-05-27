@@ -79,6 +79,15 @@ logging:
   # experiment_name will often be derived from the name of the experiment config file
   # e.g., if running `experiment=my_exp`, hydra.job.name might be `my_exp`.
   # This can be used to create a subdirectory under Hydra's run output dir.
+  hydra:
+  job:
+    chdir: true
+  run: 
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep: 
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  
   experiment_name: null # If null, Hydra typically uses the composed config name or script name.
 
   log_freq_batch: 50 # Log training batch loss every N batches
