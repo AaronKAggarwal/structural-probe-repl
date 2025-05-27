@@ -86,12 +86,29 @@ logging:
     dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep: 
     dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
-    subdir: ${hydra.job.num}
+    subdir: ${oc.select:hydra.job.num, ""}
   
   experiment_name: null # If null, Hydra typically uses the composed config name or script name.
 
   log_freq_batch: 50 # Log training batch loss every N batches
+  
   wandb:
-    enable: false
-    project: "structural-probes-modern" # Your W&B project name
-    entity: null # Your W&B username or team name (optional, can be set via env var)
+    enable: false # Default to false, override to true for runs you want to log
+    project: "structural-probes-modern" # REQUIRED: Your W&B project name
+    entity: null # Optional: Your W&B username or team name (can also be set via env var WANDB_ENTITY)
+    notes: null # Optional: A string for run description/notes
+    
+    watch_model: false # Set true to use wandb.watch()
+    watch_log_type: "all" # 'gradients', 'parameters', 'all'
+    watch_log_freq: 100  # Log every N batches
+
+    # W&B specific logging options
+    log_batch_metrics: false # Set to true to log loss every N batches (can be noisy)
+    log_freq_batch: 50     # Frequency if log_batch_metrics is true
+    
+    log_dev_detailed_artifact: false 
+    log_train_detailed_artifact: false # New: for train-eval detailed metrics
+    log_test_detailed_artifact: false 
+    log_summary_json_artifact: true # Log the final metrics_summary.json
+    log_best_checkpoint_artifact: true 
+    log_plots_as_images: true

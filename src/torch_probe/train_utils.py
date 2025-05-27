@@ -173,6 +173,14 @@ class EarlyStopper:
         
         return self.early_stop
     
+    def reset(self) -> None: # <<< ADD THIS METHOD
+        """Resets the EarlyStopper's state."""
+        self.counter = 0
+        self.best_actual_metric = None # Will be re-initialized on the next call
+        self.early_stop = False
+        if self.verbose:
+            logger.info("EarlyStopper has been reset.")
+    
     @property 
     def best_score_actual(self) -> Optional[float]:
         """Returns the best actual metric value seen so far (not transformed)."""
