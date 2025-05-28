@@ -64,6 +64,7 @@ htmlcov/
 
 # --- Data Staging / Large Files ---
 /data_staging/          # Ignore downloaded full datasets and generated sample data/embeddings
+/data/
 *.hdf5                  # Generally ignore large HDF5 files unless explicitly tracked
 *.h5
 *.params                # Ignore downloaded model parameters (like the .params from H&M)
