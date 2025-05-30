@@ -11,7 +11,7 @@ defaults:
   - probe: distance_rank32           # Default probe choice
   - training: default_adam           # Default training setup
   - evaluation: default_metrics      # Default evaluation setup
-# - experiment: null                 # 'experiment' group, must be specified by user via CLI or another config
+  - experiment: null                 # 'experiment' group, must be specified by user via CLI or another config
   
   # _self_ allows fields defined directly in *this file* (config.yaml) to be part of the config
   # and allows them to be overridden by composed configs or CLI.
@@ -100,6 +100,7 @@ logging:
     project: "structural-probes-modern" # REQUIRED: Your W&B project name
     entity: null # Optional: Your W&B username or team name (can also be set via env var WANDB_ENTITY)
     notes: null # Optional: A string for run description/notes
+    tags: null # Optional: A list of tags for the run
     
     watch_model: false # Set true to use wandb.watch()
     watch_log_type: "all" # 'gradients', 'parameters', 'all'

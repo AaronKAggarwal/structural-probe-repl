@@ -1,0 +1,22 @@
+# configs/experiment/sanity_checks/bert_base_L0_tinysample_dist.yaml
+
+defaults:
+  - _self_ # Allows defining keys directly in this file
+  - override /dataset: ptb_tinysample_for_sanity
+  - override /embeddings: bert_base_L0_tinysample_sanity 
+  - override /probe: distance_rank4_smoke         
+  - override /training: smoke_test_adam          
+  - override /evaluation: default_metrics # Use your existing default or create a minimal one
+
+# probe.type is already defined by the 'probe' group (distance_rank4_smoke)
+# No need to redefine here unless you want to override it.
+
+training:
+  epochs: 2 # Override epochs from smoke_test_adam if needed, e.g., run for 2 epochs
+  batch_size: 1 # Override batch_size for very small sample
+
+logging:
+  experiment_name: "SANITY_CHECK_BERT_L0_TinySample_Dist"
+  enable_plots: false # Disable plots for quick sanity check
+  wandb:
+    enable: false # Disable W&B for this quick local check
