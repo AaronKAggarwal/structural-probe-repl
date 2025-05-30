@@ -61,6 +61,8 @@ coverage.xml
 htmlcov/
 .tox/
 .nox/
+scripts/train_probe_filtered.py
+
 
 # --- Data Staging / Large Files ---
 /data_staging/          # Ignore downloaded full datasets and generated sample data/embeddings
