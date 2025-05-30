@@ -132,13 +132,26 @@ class ProbeDataset(Dataset):
         }
 
     def close_hdf5(self):
-        if hasattr(self, 'hdf5_file_object') and self.hdf5_file_object:
+        """Closes the HDF5 file object if it's open."""
+        # Check if the attribute exists and if it's not None AND if it has a 'close' method (duck typing)
+        if hasattr(self, 'hdf5_file_object') and \
+           self.hdf5_file_object is not None and \
+           hasattr(self.hdf5_file_object, 'id') and \
+           self.hdf5_file_object.id.valid: # h5py specific way to check if file is open
             try:
+                # print(f"DEBUG: Closing HDF5 file {self.hdf5_filepath} in close_hdf5()")
                 self.hdf5_file_object.close()
-            except Exception as e: # Catch more specific HDF5 errors if possible
-                print(f"Warning: Error closing HDF5 file {self.hdf5_filepath}: {e}")
-    
+            except Exception as e:
+                # Use logging if available, or print for standalone script
+                # log.warning(f"Warning: Error closing HDF5 file {self.hdf5_filepath} during explicit close: {e}")
+                print(f"Warning: Error closing HDF5 file {self.hdf5_filepath} during explicit close: {e}")
+        # else:
+            # print(f"DEBUG: HDF5 file {self.hdf5_filepath} already closed or not properly initialized.")
+        self.hdf5_file_object = None # Set to None after closing to prevent re-closing issues
+
     def __del__(self):
+        """Ensure HDF5 file is closed when Dataset object is garbage collected."""
+        # print(f"DEBUG: ProbeDataset.__del__ called for {self.conllu_filepath}")
         self.close_hdf5()
 
 
@@ -196,8 +209,8 @@ if __name__ == '__main__':
 
     # Use pathlib for path construction
     project_root = Path(__file__).resolve().parent.parent.parent 
-    conllu_train_path_str = str(project_root / "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.conllu")
-    hdf5_train_path_str = str(project_root / "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.elmo-layers.hdf5")
+    conllu_train_path_str = str(project_root / "data/ptb_stanford_dependencies_conllx/ptb3-wsj-TINY_SAMPLE.conllx")
+    hdf5_train_path_str = str(project_root / "data/embeddings_sanity_check/bert-base-cased_sample_dev_layers-0_6_12_align-mean.hdf5")
     
     if not Path(conllu_train_path_str).exists() or not Path(hdf5_train_path_str).exists():
         print("Please ensure CoNLL sample files from whykay-01 fork are in:")
@@ -210,9 +223,9 @@ if __name__ == '__main__':
             distance_dataset = ProbeDataset(
                 conllu_filepath=conllu_train_path_str,
                 hdf5_filepath=hdf5_train_path_str,
-                embedding_layer_index=2, 
+                embedding_layer_index=0, 
                 probe_task_type="distance",
-                embedding_dim=1024 
+                embedding_dim=768
             )
             print(f"Distance dataset loaded. Number of sentences: {len(distance_dataset)}")
             
