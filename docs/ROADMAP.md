@@ -87,64 +87,64 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
 
 ---
 
-## Phase 2: Data Preparation for Modern LLMs (PTB & Hidden State Extraction)
+## Phase 2: PTB Data Processing & Hewitt & Manning Replication Baselines
 
-**Goal:** Prepare the Penn Treebank (PTB) dataset and extract hidden state embeddings from target modern LLMs for this dataset.
+**Goal:** Prepare the Penn Treebank (PTB) dataset according to H&M's methodology and perform full replication runs for key H&M results (e.g., BERT-base Layer 7) to establish strong baselines.
 
-**Status: PENDING (Current Phase)**
+**Status: COMPLETE** (as of 2025-05-28)
 
 *   **Tasks:**
-    1.  **Acquire Penn Treebank (PTB):** Secure LDC license and dataset files.
-    2.  **Preprocess PTB:**
-        *   Convert PTB constituency parses to dependency parses (e.g., Stanford Dependencies via CoreNLP) in CoNLL-U format.
-        *   Define standard train/dev/test splits (e.g., WSJ sections).
-        *   Document preprocessing steps meticulously.
-    3.  **Select Initial Target Modern LLMs:** Finalize a list (e.g., Llama-3 8B, Mistral-7B, a RoBERTa variant). Document rationale.
+    1.  **Acquire Penn Treebank (PTB):** Secure LDC license and dataset files. *(Status: Provisional local copy obtained, official license processing underway).*
+    2.  **Set up Stanford CoreNLP 3.9.2:** Download and configure the required older version of CoreNLP. *(Status: COMPLETE).*
+    3.  **PTB to Stanford Dependencies Conversion:**
+        *   Implement/adapt script (`data_processing_scripts/ptb_to_conllx.sh`) based on H&M's original to convert PTB `.mrg` constituency parses to Stanford Dependencies (CoNLL-X format) for standard train/dev/test splits. *(Status: COMPLETE).*
+        *   Generate `ptb3-wsj-train.conllx`, `ptb3-wsj-dev.conllx`, `ptb3-wsj-test.conllx`. *(Status: COMPLETE).*
     4.  **Develop Hidden State Extraction Script (`scripts/extract_embeddings.py`):**
-        *   Utilize Hugging Face `transformers`.
-        *   Handle model-specific tokenization.
-        *   Implement robust subword-to-word alignment strategies (e.g., first, mean-pooling), making it configurable.
-        *   Extract hidden states from specified layers ("all" or a list).
-        *   Save word-aligned embeddings efficiently (e.g., HDF5, one file per model/split containing all layers, or per layer). Store metadata (model name, layer, alignment) in HDF5 attributes.
-        *   Develop for MPS, plan for CUDA.
-    5.  **Setup CUDA Docker Environment (`env/Dockerfile.cuda`):**
-        *   Based on PyTorch CUDA image (matching native version).
-        *   Include project dependencies via Poetry.
-        *   Test basic CUDA functionality.
-    6.  **Run Hidden State Extractions:**
-        *   For smaller models on MPS.
-        *   For larger models on remote GPU using the `probe:cuda` Docker image.
-    7.  **Unit Tests for Extraction Utilities:** E.g., for alignment logic.
+        *   Utilize Hugging Face `transformers` for model loading and tokenization.
+        *   Implement robust subword-to-word alignment (mean pooling via `word_ids()`).
+        *   Handle layer selection and save word-aligned embeddings to HDF5. *(Status: COMPLETE).*
+    5.  **Extract Embeddings for H&M Baseline (BERT-base):**
+        *   Run `scripts/extract_embeddings.py` for `bert-base-cased` (all layers) on the full PTB-SD train/dev/test splits. *(Status: COMPLETE).*
+    6.  **Perform Full H&M Replication Run (BERT-base L7 Distance Probe):**
+        *   Configure Hydra experiment using H&M parameters (`training_hm_replication.yaml`, full-rank probe, etc.).
+        *   Run `scripts/train_probe.py` on full PTB-SD data with BERT-base L7 embeddings.
+        *   Collect metrics (UUAS, DSpr H&M-style) and compare with H&M (2019, Table 1). *(Status: COMPLETE - Results highly consistent with H&M).*
+    7.  **Unit Tests and Smoke Tests:** Ensure all tests pass after refactoring and new feature additions. *(Status: COMPLETE).*
+    8.  *(PENDING/OPTIONAL)* Extract embeddings and run probes for other H&M baselines (e.g., BERT-base L7 Depth, BERT-Large L16 Distance/Depth, ELMo L1 Distance/Depth) for more comprehensive baseline data.
+    9.  *(PENDING)* Setup CUDA Docker Environment (`env/Dockerfile.cuda`) for efficient processing of larger models.
+
 *   **Deliverables:**
-    *   Processed PTB data in CoNLL-U format.
-    *   Working and tested `scripts/extract_embeddings.py`.
-    *   Collection of HDF5 files containing word-aligned hidden states for target LLMs on PTB.
-    *   Buildable `probe:cuda` Docker image.
-    *   Updated documentation (`DATA_PREP.md`, `ARCHITECTURE.md`, `HISTORY.md`).
+    *   Processed PTB data in H&M-aligned CoNLL-X Stanford Dependency format.
+    *   Working and validated `scripts/extract_embeddings.py`.
+    *   HDF5 files containing word-aligned embeddings for `bert-base-cased` on PTB-SD.
+    *   Successful replication of BERT-base L7 Distance probe results, matching H&M figures.
+    *   Fully updated documentation (`ARCHITECTURE.md`, `HISTORY.md`, `EXPERIMENT_PROTOCOL.md`).
 
 ---
 
-## Phase 3: Probing Modern LLMs (Baseline Sweeps)
+## Phase 3: Systematic Probing of Modern LLMs
 
-**Goal:** Apply the modern PyTorch probe (from Phase 1) to the extracted hidden states (from Phase 2) of modern LLMs using the PTB dataset.
+**Goal:** Apply the validated modern PyTorch probe to a diverse set of recent Hugging Face LLMs using the prepared PTB-SD dataset.
 
-**Status: PENDING**
+**Status: PENDING (Next Phase)**
 
 *   **Tasks:**
-    1.  Adapt modern probe's `ProbeDataset` to load PTB CoNLLU and the new HDF5 embedding formats (if different from ELMo HDF5 structure).
-    2.  Update/Create Hydra configurations for experiments on PTB with different LLMs and layers.
-    3.  For each target LLM:
-        *   Train distance probes on embeddings from various layers.
-        *   Train depth probes on embeddings from various layers.
-    4.  Collect and systematically log performance metrics (UUAS, Spearman, Root Accuracy) per layer for each model (using W&B or local logging).
-    5.  Generate "U-curve" plots (metric vs. layer) for each model and metric.
-    6.  Compare findings across models and with original H&M results for BERT. Analyze how syntax is encoded.
-    7.  (Optional) Implement H&M's specific "5-50 sentence length" averaging for Spearman for closer paper comparison.
+    1.  **Finalize Target Modern LLMs:** Select a diverse set (e.g., Llama-3 8B, Mistral-7B, a RoBERTa variant, potentially a larger model if compute allows). Document rationale.
+    2.  **Optimize Training Pipeline (Optional but Recommended):** Implement `eval_on_train_every_n_epochs` in `train_probe.py` to reduce epoch times.
+    3.  **Extract Embeddings for Modern LLMs:** Run `scripts/extract_embeddings.py` for all selected models and layers on the PTB-SD data. This will be computationally intensive.
+    4.  **Prepare Hydra Configurations:** Create `embeddings`, `probe` (adjusting rank for new model dimensions), and `experiment` configs for each modern LLM experiment.
+    5.  **Run Probing Experiments:** For each target LLM/layer:
+        *   Train distance probes.
+        *   Train depth probes.
+    6.  **Collect & Analyze Results:**
+        *   Systematically log performance metrics (UUAS, DSpr H&M, RootAcc) per layer for each model via W&B.
+        *   Generate "U-curve" plots (metric vs. layer) for each model.
+        *   Compare findings across modern models and against the BERT/ELMo baselines. Analyze how different architectures and model scales encode syntax.
 *   **Deliverables:**
-    *   Comprehensive set of probing results for selected modern LLMs on PTB.
-    *   Visualizations (U-curves, example parse tree predictions).
-    *   Initial analysis and interpretation of results.
-    *   Draft sections for a potential paper (Methods, Results, Discussion).
+    *   HDF5 embedding sets for selected modern LLMs on PTB-SD.
+    *   Comprehensive set of probing results (metrics, U-curves) for these models.
+    *   Initial analysis and interpretation comparing modern LLMs to earlier ones.
+    *   Draft sections for research paper (Methods updates, new Results, initial Discussion).
 
 ---
 
@@ -153,38 +153,16 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
 **Goal:** Explore advanced research questions and extend the probing methodology based on findings from Phase 3.
 
 **Status: PENDING**
-
-*   **Potential Tasks (Select 1-3 based on interest and Phase 3 results):**
-    1.  **Non-Linear Probes:** Implement and test simple MLP probes.
-    2.  **Models at Different Training Stages:** Compare base pre-trained vs. SFT/RLHF aligned models.
-    3.  **Mechanistic Interpretability Links:**
-        *   Train SAEs on relevant layers and map probe subspace to SAE features.
-        *   Perform causal tracing/activation patching on probe-identified subspaces or SAE features.
-    4.  **Effect of Model Scale/Architecture:** More in-depth comparisons if not fully covered in Phase 3.
-    5.  **Probing Specific Syntactic Phenomena:** Design probes or analyze probe behavior for phenomena like long-distance dependencies, agreement, argument structure.
-    6.  Cross-lingual Probing (if project scope expands).
-*   **Deliverables:**
-    *   Results and analysis for chosen extension(s).
-    *   Further draft material for paper/report.
+*   (Existing content for Potential Tasks and Deliverables is fine)
 
 ---
 
 ## Phase 5: Paper Assembly, Finalization, and Reproducibility Package
 
-**Goal:** Produce a high-quality research paper (or report) and ensure the project is fully reproducible by the wider community.
+**Goal:** Produce a high-quality research paper (or report) and ensure the project is fully reproducible.
 
 **Status: PENDING**
-
-*   **Tasks:**
-    1.  Write/Complete all sections of the research paper.
-    2.  Generate final figures, tables, and statistical analyses.
-    3.  Thoroughly review and finalize all project documentation in `docs/`.
-    4.  Create or refine a `REPRODUCE.md` guide and/or `reproduce.sh` script to replicate key findings (e.g., training a specific probe on a specific model/layer).
-    5.  Clean up codebase, ensure all tests pass, add more integration tests if needed.
-    6.  Prepare for public release of code, configurations, and potentially some derived data (e.g., probe parameters, aggregated results) on GitHub.
-*   **Deliverables:**
-    *   Completed research paper draft (for submission, preprint, or internal report).
-    *   Public GitHub repository with fully reproducible code and documentation.
+*   (Existing content for Tasks and Deliverables is fine)
 
 ---
 

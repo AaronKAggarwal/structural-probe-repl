@@ -64,8 +64,18 @@ This Docker container (defined in `env/Dockerfile.legacy_pt_cpu`) replicates the
 *   `git`: May be needed by `pip` for some packages or by AllenNLP for certain operations.
 *   `wget`: General download utility (used by H&M's original `download_example.sh`).
 
----
-## 3. CUDA Docker Environment (`probe:cuda` - For Phase 2+ Modern Probe on NVIDIA GPUs)
+## 3. Data Preprocessing Tools (External to Poetry Environment)
+
+This section lists tools used for initial data preparation before the Python pipeline.
+
+| Tool / Library        | Version Used/Targeted | Rationale & Notes                                                                 |
+|-----------------------|-----------------------|-----------------------------------------------------------------------------------|
+| **Java (JDK/JRE)**    | 11 or 17 (e.g., OpenJDK) | Required by Stanford CoreNLP.                                                    |
+| **Stanford CoreNLP**  | 3.9.2 (Full package)  | Used to convert Penn Treebank constituency parses to Stanford Dependencies (CoNLL-X format), aligning with Hewitt & Manning (2019). Downloaded separately. |
+| (Potentially `unzstd`)| (System dependent)    | May be needed to decompress LDC .tar.zst archives.                                |
+
+
+## 4. CUDA Docker Environment (`probe:cuda` - For Phase 2+ Modern Probe on NVIDIA GPUs)
 
 **Status: PLANNED**
 

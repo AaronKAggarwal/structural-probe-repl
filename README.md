@@ -36,11 +36,28 @@ The original paper introduced a method for identifying syntactic structure in la
         *   Successfully trained and evaluated modern distance and depth probes on an ELMo sample data (using self-generated, MWT-filtered aligned HDF5s), producing plausible metrics and demonstrating functionality on MPS. The pipeline, including H&M-style optimizer reset and LR decay, runs end-to-end producing plausible metrics. Qualitative parity with Phase 0a legacy code behavior established.
     *   Details in `docs/ARCHITECTURE.md` and `docs/HISTORY.md`.
 
-*   **Next Major Phase:** **Phase 2 - Data Preparation for Modern LLMs (PTB & Hidden State Extraction)**
-    *   Acquiring and preprocessing the Penn Treebank.
-    *   Selecting target modern LLMs.
-    *   Developing scripts for hidden state extraction and subword-to-word alignment.
-    *   Setting up a CUDA Docker environment for larger models.
+*   **Phase 2: Data Preparation & Initial H&M Replication - SIGNIFICANT PROGRESS / NEARING COMPLETION**
+    *   **Penn Treebank (PTB) Processing:**
+        *   Successfully acquired provisional PTB data (LDC99T42/LDC95T7).
+        *   Set up Stanford CoreNLP 3.9.2.
+        *   Implemented and ran `data_processing_scripts/ptb_to_conllx.sh` to convert PTB WSJ `.mrg` constituency parses into Stanford Dependencies (CoNLL-X format) for train/dev/test splits, aligning with H&M's methodology.
+        *   Core library (`conllu_reader.py`, `dataset.py`) updated to handle CoNLL-X and XPOS tags.
+    *   **Embedding Extraction Script (`scripts/extract_embeddings.py`):**
+        *   Developed script to extract word-aligned embeddings from Hugging Face Transformer models using CoNLL-X/U input.
+        *   Implements robust subword-to-word alignment (e.g., mean pooling using `word_ids()`).
+        *   Successfully extracted embeddings for `bert-base-cased` (all layers) on the full PTB-SD dataset.
+    *   **H&M Metric Alignment & Pipeline Validation:**
+        *   `evaluate.py` refactored for H&M-style Spearman correlation averaging and XPOS-based punctuation filtering.
+        *   `train_probe.py` enhanced with granular checkpointing and robust W&B integration.
+        *   All unit and smoke tests updated and passing.
+    *   **Successful H&M Replication Baseline:**
+        *   Completed a full run for BERT-base Layer 7 Distance Probe on PTB-SD.
+        *   Achieved UUAS and DSpr (H&M style) metrics highly consistent with Hewitt & Manning (2019, Table 1), validating the entire pipeline.
+
+*   **Next Major Phase: Phase 3 - Systematic Probing of Modern LLMs & Further H&M Baselines**
+    *   Replicate other key H&M results (e.g., Depth probes, BERT-Large).
+    *   Extract embeddings and run probes for selected modern LLMs (e.g., Llama, Mistral).
+    *   Implement optimization for train-set evaluation frequency in `train_probe.py`.
 
 ## Repository Structure Overview
 
