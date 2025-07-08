@@ -7,11 +7,11 @@ The original paper introduced a method for identifying syntactic structure in la
 ## Project Goals
 
 1.  **Replicate:** Faithfully reproduce the Hewitt & Manning probing methodology, initially by running their original PyTorch code in a containerized legacy environment and then by re-implementing the probe in a modern PyTorch framework.
-2.  **Verify:** Validate the modern probe implementation against results from the legacy codebase using sample data.
-3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the Penn Treebank (PTB) to investigate how these newer models encode syntax.
+2.  **Verify:** Validate the modern probe implementation against results from H&M's original work on the Penn Treebank (PTB) dataset.
+3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax. <!-- Changed PTB to UD here -->
 4.  **Explore:** Investigate novel research directions based on the findings, potentially including different probe types, analysis of model training stages, or mechanistic interpretability approaches.
 
-## Current Status (as of 2025-05-26)
+## Current Status (as of 2025-07-08)
 
 *   **Phase 0: Environment Setup & Legacy Probe Replication - COMPLETE**
     *   **Native macOS Development Environment (PyTorch 2.x, MPS):** Successfully set up using Python 3.11 and Poetry. Core dependencies installed and MPS functionality verified. (See `docs/ENV_SETUP.md`)
@@ -19,55 +19,43 @@ The original paper introduced a method for identifying syntactic structure in la
         *   Original H&M PyTorch-based code (from `john-hewitt/structural-probes`) vendored into `src/legacy/structural_probe/`.
         *   A Docker environment (`probe:legacy_pt_cpu` image) has been successfully built to run this legacy code.
         *   Original example data (CoNLLU, ELMo HDF5) and pre-trained BERT probe parameters were sourced from the `whykay-01/structural-probes` GitHub fork, as original download links were dead. This data is included in the Docker image.
-        *   The legacy code successfully runs both the **ELMo training example** (on the sourced EWT sample) and the **BERT demo** (with pre-trained probes) end-to-end within the container, producing plausible metrics and visualizations.
-        *   Challenges and fixes are documented in `docs/HISTORY.md` and `docs/QUIRKS.md`.
+        *   The legacy code successfully runs both the **ELMo training example** (on the sourced EWT sample) and the **BERT demo** (with pre-trained probes) end-to-end within the container.
 
 *   **Phase 1: Modern PyTorch Probe Re-implementation - COMPLETE**
-    *   **Core Components:**
-        *   Data utilities (`conllu_reader`, `gold_labels`, `embedding_loader`) implemented and unit-tested.
-        *   PyTorch `ProbeDataset` and `collate_fn` for data loading/batching implemented and unit-tested.
-        *   `DistanceProbe` and `DepthProbe` PyTorch `nn.Module`s implemented and unit-tested.
-        *   L1 loss functions (aligned with H&M methodology) implemented and unit-tested.
-        *   Training utilities (`get_optimizer`, `EarlyStopper`, 'LRSchedulerWithOptimizerReset', checkpointing) and evaluation metrics (Spearman, UUAS, RootAcc with punctuation filtering) implemented and unit-tested.
-    *   **Training Pipeline:**
-        *   Main training script (`scripts/train_probe.py`) with Hydra integration implemented.
-        *   Smoke test for the full modern training pipeline passes.
-    *   **Validation:**
-        *   Successfully trained and evaluated modern distance and depth probes on an ELMo sample data (using self-generated, MWT-filtered aligned HDF5s), producing plausible metrics and demonstrating functionality on MPS. The pipeline, including H&M-style optimizer reset and LR decay, runs end-to-end producing plausible metrics. Qualitative parity with Phase 0a legacy code behavior established.
+    *   **Core Components:** Implemented and unit-tested a full, modern probing pipeline in `src/torch_probe/`, including data utilities, PyTorch `Dataset`s, `DistanceProbe` and `DepthProbe` models, H&M-aligned loss functions, and evaluation metrics (Spearman, UUAS, Root Accuracy with punctuation filtering).
+    *   **Training Pipeline:** Implemented `scripts/train_probe.py` with Hydra integration, H&M-style optimizer reset, and granular checkpointing. Smoke tests for the full pipeline pass.
     *   Details in `docs/ARCHITECTURE.md` and `docs/HISTORY.md`.
 
-*   **Phase 2: Data Preparation & Initial H&M Replication - SIGNIFICANT PROGRESS / NEARING COMPLETION**
-    *   **Penn Treebank (PTB) Processing:**
-        *   Successfully acquired provisional PTB data (LDC99T42/LDC95T7).
-        *   Set up Stanford CoreNLP 3.9.2.
-        *   Implemented and ran `data_processing_scripts/ptb_to_conllx.sh` to convert PTB WSJ `.mrg` constituency parses into Stanford Dependencies (CoNLL-X format) for train/dev/test splits, aligning with H&M's methodology.
-        *   Core library (`conllu_reader.py`, `dataset.py`) updated to handle CoNLL-X and XPOS tags.
-    *   **Embedding Extraction Script (`scripts/extract_embeddings.py`):**
-        *   Developed script to extract word-aligned embeddings from Hugging Face Transformer models using CoNLL-X/U input.
-        *   Implements robust subword-to-word alignment (e.g., mean pooling using `word_ids()`).
-        *   Successfully extracted embeddings for `bert-base-cased` (all layers) on the full PTB-SD dataset.
-    *   **H&M Metric Alignment & Pipeline Validation:**
-        *   `evaluate.py` refactored for H&M-style Spearman correlation averaging and XPOS-based punctuation filtering.
-        *   `train_probe.py` enhanced with granular checkpointing and robust W&B integration.
-        *   All unit and smoke tests updated and passing.
-    *   **Successful H&M Replication Baseline:**
-        *   Completed a full run for BERT-base Layer 7 Distance Probe on PTB-SD.
-        *   Achieved UUAS and DSpr (H&M style) metrics highly consistent with Hewitt & Manning (2019, Table 1), validating the entire pipeline.
+*   **Phase 2: Pipeline Validation & Dataset Pivot - COMPLETE** 
 
-*   **Next Major Phase: Phase 3 - Systematic Probing of Modern LLMs & Further H&M Baselines**
-    *   Replicate other key H&M results (e.g., Depth probes, BERT-Large).
-    *   Extract embeddings and run probes for selected modern LLMs (e.g., Llama, Mistral).
-    *   Implement optimization for train-set evaluation frequency in `train_probe.py`.
+    *   **PTB-SD Replication (Methodology Validation):**
+        *   Successfully processed the Penn Treebank (PTB) into Stanford Dependencies (CoNLL-X) using `data_processing_scripts/ptb_to_conllx.sh`.
+        *   Developed `scripts/extract_embeddings.py` for extracting word-aligned embeddings from Hugging Face models.
+        *   **Completed a full replication of Hewitt & Manning (2019, Table 1)** for the BERT-base Layer 7 Distance Probe on PTB-SD, achieving highly consistent UUAS and DSpr metrics. **This validates the correctness of the modern pipeline.**
+    *   **Pivot to Universal Dependencies (UD):**
+        *   The project's primary dataset for extension has been shifted from PTB-SD to the **Universal Dependencies English Web Treebank (UD EWT)** to align with modern NLP standards and facilitate cross-linguistic work.
+        *   All data loading and evaluation code has been verified for compatibility with the UD CoNLL-U format.
+    *   **UD Baseline Establishment:**
+        *   Successfully ran the validated modern pipeline to establish strong baselines on UD EWT for key H&M models:
+            *   **ELMo (Distance Probe):** Layer 1 (UUAS: 0.72), Layer 2 (UUAS: 0.65), Layer 0 (UUAS: 0.32).
+            *   **BERT-base Layer 7 (Distance Probe):** UUAS ~0.80.
+
+*   **Next Major Phase: Systematic Probing of Modern LLMs on Universal Dependencies**
+    *   Replicate depth probe baselines for ELMo and BERT on UD EWT.
+    *   Extract embeddings and run distance/depth probes for a selection of modern LLMs (e.g., Llama-3, Mistral) on UD EWT.
+    *   Analyze and compare syntactic encoding across different model architectures and scales.
 
 ## Repository Structure Overview
 
-*   **`configs/`**: Hydra configuration files for experiments.
+*   **`configs/`**: Hydra configuration files for experiments. Structured by `dataset`, `embeddings`, `probe`, etc. Includes configs for both PTB and UD experiments.
 *   **`data_staging/`**: (Gitignored) Local area for downloading/preparing raw datasets.
 *   **`docs/`**: All project documentation (see `docs/DOC_INDEX.md` for a full list).
 *   **`env/`**: Dockerfiles for various environments (e.g., `Dockerfile.legacy_pt_cpu`).
 *   **`outputs/`**: (Gitignored) Default output directory for Hydra runs.
 *   **`results_staging/`**: (Gitignored) Local area for inspecting results from container runs.
 *   **`scripts/`**: Executable scripts (data preparation, training, evaluation).
+    *   `scripts/extract_embeddings.py`: Generic script to extract embeddings for any Hugging Face model.
+    *   `scripts/train_probe.py`: Main Hydra-configurable script for training and evaluating probes.
 *   **`src/`**: Source code for the project.
     *   `src/legacy/structural_probe/`: Vendored original Hewitt & Manning codebase.
     *   `src/torch_probe/`: Modern PyTorch re-implementation of the probe and utilities.
