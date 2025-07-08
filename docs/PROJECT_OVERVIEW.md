@@ -60,7 +60,7 @@ The NLP landscape has evolved significantly since 2019 with the advent of even l
 This project specifically aims to:
 
 1.  **Aim 1 (Phase 0a & 1):** Successfully replicate the Hewitt & Manning (2019) structural probe methodology, first by running their legacy code on sample data, and then by creating a modern, validated PyTorch implementation.
-2.  **Aim 2 (Phase 2 & 3):** Apply this modern structural probe to a diverse set of recent, high-performing LLMs available via Hugging Face, using the Penn Treebank (PTB) as the primary evaluation dataset. This involves:
+2.  **Aim 2 (Phase 2 & 3):** Apply this modern structural probe to a diverse set of recent, high-performing LLMs available via Hugging Face, using the Universal Dependencies (UD) as the primary evaluation dataset. This involves:
     *   Extracting hidden state representations from various layers of these models.
     *   Training distance and depth probes for each layer.
     *   Analyzing and comparing the extent and location (which layers) of syntactic encoding across these models.

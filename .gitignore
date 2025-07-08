@@ -90,6 +90,8 @@ data/
 *.pt
 /checkpoints/
 /outputs/
+/outputs_extract_embeddings/
+/outputs_extract_embeddings_filtered/
 /multirun/
 *.log
 metrics_summary.json
@@ -122,3 +124,4 @@ src/legacy/structural_probe/example/results/
 *.save
 *.tmp
 *.temp
+/temp*/
