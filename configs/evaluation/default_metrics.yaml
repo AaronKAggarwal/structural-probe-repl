@@ -7,3 +7,5 @@
 metrics: ["loss", "spearmanr_hm", "uuas", "root_acc"] # Use the new spearman key
 spearman_min_len: 5
 spearman_max_len: 50
+filter_by_non_punct_len: true
+punctuation_strategy: "upos"
