@@ -1,9 +1,13 @@
 # tests/unit/torch_probe/test_conllu_reader.py
-import pytest
+import tempfile  # For creating temporary files
 from pathlib import Path
-import tempfile # For creating temporary files
 
-from src.torch_probe.utils.conllu_reader import read_conll_file # Adjust import if structure differs
+import pytest
+
+from src.torch_probe.utils.conllu_reader import (
+    read_conll_file,  # Adjust import if structure differs
+)
+
 
 @pytest.fixture
 def sample_conllu_file_fixture():
@@ -27,28 +31,32 @@ def sample_conllu_file_fixture():
 7	.	.	PUNCT	.	_	4	punct	_	_
 """
     # Use tempfile for creating files during tests
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".conllu", encoding="utf-8") as tmp_file:
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, suffix=".conllu", encoding="utf-8"
+    ) as tmp_file:
         tmp_file.write(conllu_content)
         filepath = tmp_file.name
     yield filepath
-    Path(filepath).unlink() # Clean up
+    Path(filepath).unlink()  # Clean up
+
 
 def test_read_simple_sentence(sample_conllu_file_fixture):
     sentences = read_conll_file(sample_conllu_file_fixture)
     assert len(sentences) == 2
-    
+
     # Test sentence 1
     sent1 = sentences[0]
-    assert sent1['tokens'] == ['This', 'is', 'a', 'test', '.']
-    assert sent1['head_indices'] == [3, 3, 3, -1, 3] # 0-indexed, root is -1
-    assert sent1['upos_tags'] == ['PRON', 'AUX', 'DET', 'NOUN', 'PUNCT']
-    assert sent1['dep_rels'] == ['nsubj', 'cop', 'det', 'root', 'punct']
+    assert sent1["tokens"] == ["This", "is", "a", "test", "."]
+    assert sent1["head_indices"] == [3, 3, 3, -1, 3]  # 0-indexed, root is -1
+    assert sent1["upos_tags"] == ["PRON", "AUX", "DET", "NOUN", "PUNCT"]
+    assert sent1["dep_rels"] == ["nsubj", "cop", "det", "root", "punct"]
+
 
 def test_read_mwt_sentence(sample_conllu_file_fixture):
     sentences = read_conll_file(sample_conllu_file_fixture)
     # Test sentence 2 (with MWT)
     sent2 = sentences[1]
-    assert sent2['tokens'] == ['Multi', '-', 'word', 'tokens', 'are', 'handled', '.']
+    assert sent2["tokens"] == ["Multi", "-", "word", "tokens", "are", "handled", "."]
     # Heads for MWT example:
     # Multi -> word (idx 2)
     # - -> Multi (idx 0)
@@ -66,5 +74,13 @@ def test_read_mwt_sentence(sample_conllu_file_fixture):
     # are (4) -> handled (5)
     # handled (5) -> tokens (3)
     # . (6) -> tokens (3)
-    assert sent2['head_indices'] == [2, 0, 3, -1, 3, 3, 3]
-    assert sent2['upos_tags'] == ['ADJ', 'PUNCT', 'NOUN', 'NOUN', 'AUX', 'VERB', 'PUNCT']
+    assert sent2["head_indices"] == [2, 0, 3, -1, 3, 3, 3]
+    assert sent2["upos_tags"] == [
+        "ADJ",
+        "PUNCT",
+        "NOUN",
+        "NOUN",
+        "AUX",
+        "VERB",
+        "PUNCT",
+    ]

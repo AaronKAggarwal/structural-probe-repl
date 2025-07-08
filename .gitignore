@@ -66,7 +66,9 @@ scripts/train_probe_filtered.py
 
 # --- Data Staging / Large Files ---
 /data_staging/          # Ignore downloaded full datasets and generated sample data/embeddings
+data_staging/
 /data/
+data/
 data/
 *.hdf5                  # Generally ignore large HDF5 files unless explicitly tracked
 *.h5
@@ -74,7 +76,9 @@ data/
 
 # --- Results / Outputs ---
 /results_staging/       # Ignore locally mounted results from container runs
+results_staging/
 /results/               # General results directory - adjust if needed
+results/
 *.log                   # Ignore log files by default
 *.tsv
 *.csv

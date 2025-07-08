@@ -19,7 +19,6 @@ import sys
 from textwrap import dedent
 
 import numpy as np
-import pytest
 
 # ---------------------------------------------------------------------------
 # Ensure that ``src`` is on the import path so that ``torch_probe`` can be
@@ -41,6 +40,7 @@ from torch_probe.utils.gold_labels import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _write_conllu(tmp_path: pathlib.Path, content: str) -> pathlib.Path:
     """Write *content* to a new ``example.conllu`` in *tmp_path* and return it."""
@@ -191,35 +191,41 @@ def test_calculate_tree_depths_multiple_roots() -> None:
 
 def test_calculate_tree_distances_linear_chain() -> None:
     heads = [-1, 0, 1, 2]
-    expected = np.array([
-        [0, 1, 2, 3],
-        [1, 0, 1, 2],
-        [2, 1, 0, 1],
-        [3, 2, 1, 0],
-    ])
+    expected = np.array(
+        [
+            [0, 1, 2, 3],
+            [1, 0, 1, 2],
+            [2, 1, 0, 1],
+            [3, 2, 1, 0],
+        ]
+    )
     np.testing.assert_array_equal(calculate_tree_distances(heads), expected)
 
 
 def test_calculate_tree_distances_star_graph() -> None:
     heads = [-1, 0, 0, 0]
-    expected = np.array([
-        [0, 1, 1, 1],
-        [1, 0, 2, 2],
-        [1, 2, 0, 2],
-        [1, 2, 2, 0],
-    ])
+    expected = np.array(
+        [
+            [0, 1, 1, 1],
+            [1, 0, 2, 2],
+            [1, 2, 0, 2],
+            [1, 2, 2, 0],
+        ]
+    )
     np.testing.assert_array_equal(calculate_tree_distances(heads), expected)
 
 
 def test_calculate_tree_distances_complex_tree() -> None:
     heads = [-1, 0, 1, 1, 3]
-    expected = np.array([
-        [0, 1, 2, 2, 3],
-        [1, 0, 1, 1, 2],
-        [2, 1, 0, 2, 3],
-        [2, 1, 2, 0, 1],
-        [3, 2, 3, 1, 0],
-    ])
+    expected = np.array(
+        [
+            [0, 1, 2, 2, 3],
+            [1, 0, 1, 1, 2],
+            [2, 1, 0, 2, 3],
+            [2, 1, 2, 0, 1],
+            [3, 2, 3, 1, 0],
+        ]
+    )
     np.testing.assert_array_equal(calculate_tree_distances(heads), expected)
 
 

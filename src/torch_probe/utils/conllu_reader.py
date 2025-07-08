@@ -1,6 +1,6 @@
 # src/torch_probe/utils/conllu_reader.py
-from typing import List, Dict, Any, Iterator
 from pathlib import Path
+from typing import Any, Dict, Iterator, List
 
 # Standard CoNLL column indices (0-indexed)
 # These are common for CoNLL-U and CoNLL-X.
@@ -17,17 +17,20 @@ COL_DEPREL = 7
 # COL_PDEPREL = 9 (Usually not needed for basic parsing tasks)
 
 # Minimum expected columns for a valid data line
-MIN_EXPECTED_COLUMNS = max(COL_ID, COL_FORM, COL_UPOS, COL_XPOS, COL_HEAD, COL_DEPREL) + 1
+MIN_EXPECTED_COLUMNS = (
+    max(COL_ID, COL_FORM, COL_UPOS, COL_XPOS, COL_HEAD, COL_DEPREL) + 1
+)
 
 
-SentenceData = Dict[str, List[Any]] # Type alias for clarity
+SentenceData = Dict[str, List[Any]]  # Type alias for clarity
+
 
 def _generate_sentence_lines(filepath: str) -> Iterator[List[str]]:
     """
-    Reads a CoNLL-U/CoNLL-X file and yields lists of lines, 
+    Reads a CoNLL-U/CoNLL-X file and yields lists of lines,
     each list representing one sentence. Skips comment lines.
     """
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         sentence_buffer: List[str] = []
         for line in f:
             line = line.strip()
@@ -35,12 +38,13 @@ def _generate_sentence_lines(filepath: str) -> Iterator[List[str]]:
                 if sentence_buffer:
                     yield sentence_buffer
                     sentence_buffer = []
-            elif line.startswith('#'):  # Skip comment lines
+            elif line.startswith("#"):  # Skip comment lines
                 continue
             else:
                 sentence_buffer.append(line)
         if sentence_buffer:  # Yield the last sentence if file doesn't end with newline
             yield sentence_buffer
+
 
 def read_conll_file(filepath: str) -> List[SentenceData]:
     """
@@ -64,27 +68,27 @@ def read_conll_file(filepath: str) -> List[SentenceData]:
 
     for sentence_lines in _generate_sentence_lines(filepath):
         tokens: List[str] = []
-        head_indices_str: List[str] = [] 
+        head_indices_str: List[str] = []
         dep_rels: List[str] = []
         upos_tags: List[str] = []
-        xpos_tags: List[str] = [] 
-        
+        xpos_tags: List[str] = []
+
         # Store valid token lines to process after checking sentence integrity
         valid_token_data_parts: List[List[str]] = []
 
         for line_idx, line in enumerate(sentence_lines):
-            parts = line.split('\t')
-            
+            parts = line.split("\t")
+
             if len(parts) < MIN_EXPECTED_COLUMNS:
                 # print(f"Warning: Skipping malformed CoNLL line (not enough columns): {line} in file {filepath}")
-                continue # Skip malformed lines
-            
+                continue  # Skip malformed lines
+
             token_id_str = parts[COL_ID]
-            
+
             # Skip multi-word token lines (e.g., "1-2")
-            if '-' in token_id_str:
+            if "-" in token_id_str:
                 continue
-            
+
             # Skip lines where ID is not a simple digit (might be comments or enhanced dep IDs like "1.1")
             if not token_id_str.isdigit():
                 # print(f"Warning: Skipping non-standard ID line: {line} in file {filepath}")
@@ -92,15 +96,17 @@ def read_conll_file(filepath: str) -> List[SentenceData]:
 
             valid_token_data_parts.append(parts)
 
-        if not valid_token_data_parts: # Skip if sentence had no valid token lines
+        if not valid_token_data_parts:  # Skip if sentence had no valid token lines
             continue
 
         # Process the collected valid token lines for this sentence
         for parts in valid_token_data_parts:
             tokens.append(parts[COL_FORM])
             upos_tags.append(parts[COL_UPOS])
-            xpos_tags.append(parts[COL_XPOS]) # PTB POS tags used by H&M for punctuation
-            head_indices_str.append(parts[COL_HEAD]) 
+            xpos_tags.append(
+                parts[COL_XPOS]
+            )  # PTB POS tags used by H&M for punctuation
+            head_indices_str.append(parts[COL_HEAD])
             dep_rels.append(parts[COL_DEPREL])
 
         # Convert head indices to 0-indexed integers, root points to -1
@@ -113,78 +119,98 @@ def read_conll_file(filepath: str) -> List[SentenceData]:
                 # If it occurs, treating as root or raising an error might be options.
                 # H&M's task.py had logic for '_', let's assume for now parsers give digits.
                 # print(f"Warning: Non-integer head '{head_str}' for token '{tokens[i]}'. Defaulting to root (-1). File: {filepath}")
-                head_indices.append(-1) 
+                head_indices.append(-1)
                 continue
-            
+
             head_val = int(head_str)
             if head_val == 0:  # Root in CoNLL (0-indexed head)
-                head_indices.append(-1) 
+                head_indices.append(-1)
             else:
-                head_indices.append(head_val - 1) # Convert 1-indexed to 0-indexed
+                head_indices.append(head_val - 1)  # Convert 1-indexed to 0-indexed
 
-        parsed_sentences.append({
-            'tokens': tokens,
-            'head_indices': head_indices,
-            'dep_rels': dep_rels,
-            'upos_tags': upos_tags, # UPOS/CPOSTAG
-            'xpos_tags': xpos_tags  # XPOS/POSTAG (PTB tags)
-        })
-        
+        parsed_sentences.append(
+            {
+                "tokens": tokens,
+                "head_indices": head_indices,
+                "dep_rels": dep_rels,
+                "upos_tags": upos_tags,  # UPOS/CPOSTAG
+                "xpos_tags": xpos_tags,  # XPOS/POSTAG (PTB tags)
+            }
+        )
+
     return parsed_sentences
 
-if __name__ == '__main__':
-    import os # For path operations if needed, though pathlib is better
 
+if __name__ == "__main__":
     print("--- Testing read_conll_file function ---")
 
     # --- Configuration for the test ---
     # Adjust this path to point to one of your newly generated .conllx files
     # This path is relative to where you RUN this script from.
     # If you run `python src/torch_probe/utils/conllu_reader.py` from the PROJECT ROOT:
-    project_root = Path(__file__).resolve().parent.parent.parent.parent # Assuming src/torch_probe/utils/conllu_reader.py
+    project_root = (
+        Path(__file__).resolve().parent.parent.parent.parent
+    )  # Assuming src/torch_probe/utils/conllu_reader.py
     # Alternatively, if you always run from project root:
-    # project_root = Path.cwd() 
-    
+    # project_root = Path.cwd()
+
     # Path to the test CoNLL-X file generated by ptb_to_conllx.sh
     # Example: using the dev split
-    test_conllx_file_path = project_root / "data" / "ptb_stanford_dependencies_conllx" / "ptb3-wsj-dev.conllx"
-    
+    test_conllx_file_path = (
+        project_root
+        / "data"
+        / "ptb_stanford_dependencies_conllx"
+        / "ptb3-wsj-dev.conllx"
+    )
+
     num_sentences_to_print = 3
     # --- End Configuration ---
 
     if not test_conllx_file_path.exists():
         print(f"ERROR: Test CoNLL-X file not found at: {test_conllx_file_path}")
-        print("Please ensure the path is correct and the ptb_to_conllx.sh script has been run successfully.")
+        print(
+            "Please ensure the path is correct and the ptb_to_conllx.sh script has been run successfully."
+        )
     else:
         print(f"Attempting to read and parse: {test_conllx_file_path}")
         try:
             parsed_sentences_data = read_conll_file(str(test_conllx_file_path))
-            
+
             if not parsed_sentences_data:
                 print("No sentences were parsed from the file.")
             else:
                 print(f"Successfully parsed {len(parsed_sentences_data)} sentences.")
-                print(f"\n--- Displaying first {num_sentences_to_print} parsed sentences ---")
-                for i, sent_data in enumerate(parsed_sentences_data[:num_sentences_to_print]):
+                print(
+                    f"\n--- Displaying first {num_sentences_to_print} parsed sentences ---"
+                )
+                for i, sent_data in enumerate(
+                    parsed_sentences_data[:num_sentences_to_print]
+                ):
                     print(f"\nSentence {i + 1}:")
                     print(f"  Tokens:       {sent_data.get('tokens')}")
                     print(f"  Head Indices: {sent_data.get('head_indices')}")
                     print(f"  UPOS Tags:    {sent_data.get('upos_tags')}")
-                    print(f"  XPOS Tags:    {sent_data.get('xpos_tags')}") # Verify this is populated
+                    print(
+                        f"  XPOS Tags:    {sent_data.get('xpos_tags')}"
+                    )  # Verify this is populated
                     print(f"  Dep Relations:{sent_data.get('dep_rels')}")
-                    
+
                     # Optional: Check lengths consistency
-                    if sent_data.get('tokens') and sent_data.get('head_indices'):
-                        if len(sent_data['tokens']) != len(sent_data['head_indices']):
-                            print(f"  WARNING: Token count ({len(sent_data['tokens'])}) and head_indices count ({len(sent_data['head_indices'])}) mismatch!")
-                    if sent_data.get('tokens') and sent_data.get('xpos_tags'):
-                         if len(sent_data['tokens']) != len(sent_data['xpos_tags']):
-                            print(f"  WARNING: Token count ({len(sent_data['tokens'])}) and xpos_tags count ({len(sent_data['xpos_tags'])}) mismatch!")
+                    if sent_data.get("tokens") and sent_data.get("head_indices"):
+                        if len(sent_data["tokens"]) != len(sent_data["head_indices"]):
+                            print(
+                                f"  WARNING: Token count ({len(sent_data['tokens'])}) and head_indices count ({len(sent_data['head_indices'])}) mismatch!"
+                            )
+                    if sent_data.get("tokens") and sent_data.get("xpos_tags"):
+                        if len(sent_data["tokens"]) != len(sent_data["xpos_tags"]):
+                            print(
+                                f"  WARNING: Token count ({len(sent_data['tokens'])}) and xpos_tags count ({len(sent_data['xpos_tags'])}) mismatch!"
+                            )
 
-
-        except Exception as e:
-            print(f"An error occurred during parsing or processing:")
+        except Exception:
+            print("An error occurred during parsing or processing:")
             import traceback
+
             traceback.print_exc()
 
     print("\n--- End of conllu_reader.py test ---")
