@@ -86,11 +86,27 @@ All experiments are controlled via YAML files in `configs/` managed by Hydra.
 
 The evaluation metrics (UUAS, Spearman, RootAcc) are aligned with H&M's methodology, which ignores punctuation. **Crucially, the current implementation identifies punctuation using PTB-style XPOS tags.** This works correctly for both the PTB-SD dataset and the UD English EWT treebank (which also provides PTB-style XPOS tags). For other UD languages, this logic may need to be adapted to use the universal `UPOS == 'PUNCT'` tag.
 
-### 5.2. Learning Rate Scheduling & Checkpointing
+### 5.2. Key Evaluation Strategies
+
+The evaluation pipeline has two important configurable strategies that affect metric calculation. These are controlled in your `evaluation/*.yaml` config files or via CLI override.
+
+*   **Punctuation Filtering (`punctuation_strategy`):**
+    *   **Goal:** To ignore punctuation tokens when calculating UUAS and Root Accuracy.
+    *   **Options:**
+        *   `"xpos"` (H&M Replication): Uses the original paper's method of filtering based on a hardcoded list of PTB-style XPOS tags (e.g., `.`, `,`, `` ` ``). Use this for replicating PTB results.
+        *   `"upos"` (Default, Recommended): Uses the language-agnostic Universal POS tags `PUNCT` and `SYM`. This is the recommended strategy for all new experiments, especially on non-English UD treebanks.
+
+*   **Spearman Correlation Length Filtering (`filter_by_non_punct_len`):**
+    *   **Goal:** To filter sentences for the final DSpr/NSpr macro-average, excluding very short or very long sentences.
+    *   **Options:**
+        *   `false` (H&M Replication): Filters based on the sentence's original token count, including punctuation (the behavior of the original H&M code).
+        *   `true` (Default, Recommended): Filters based on the number of non-punctuation tokens in the sentence. This provides a more consistent measure of sentence complexity.
+
+### 5.3. Learning Rate Scheduling & Checkpointing
 
 The training script supports an H&M-style LR decay with optimizer reset (`training.lr_scheduler_with_reset`) and granular checkpointing options, configured in your `training/*.yaml` or experiment files.
 
-### 5.3. Running a Single Experiment on UD EWT
+### 5.4. Running a Single Experiment on UD EWT
 
 **Command Structure:**
 ```bash
@@ -110,7 +126,7 @@ poetry run python scripts/train_probe.py experiment=<path/to/experiment_file_nam
         logging.wandb.enable=true
     ```
 
-### 5.4. Running Multiple Experiments (Sweeps with Hydra Multirun)
+### 5.5. Running Multiple Experiments (Sweeps with Hydra Multirun)
 
 Use the `-m` or `--multirun` flag to sweep over parameters.
 

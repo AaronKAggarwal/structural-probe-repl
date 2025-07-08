@@ -69,7 +69,7 @@ This section details the structure of the current project, which uses a modern P
         *   `dataset.py`: Defines `ProbeDataset` and the `collate_probe_batch` function.
         *   `probe_models.py`: Defines `DistanceProbe` and `DepthProbe` as `nn.Module`s.
         *   `loss_functions.py`: Custom L1 loss functions aligned with H&M's methodology.
-        *   `evaluate.py`: Functions for calculating metrics (Spearman, UUAS, Root Accuracy). **Crucially, uses H&M's punctuation filtering based on XPOS tags**, which works for both PTB-SD and UD English EWT.
+        *   `evaluate.py`: Functions for calculating metrics (Spearman, UUAS, Root Accuracy). **Crucially, punctuation filtering is configurable:** it can use either H&M's PTB-style XPOS tags (for replication) or universal UPOS tags (for new experiments). The length-filtering for Spearman correlation is also configurable to match the original code's behavior or use a more robust non-punctuation-based method.
         *   `train_utils.py`: Helpers for training (optimizer, `LRSchedulerWithOptimizerReset`, `EarlyStopper`, checkpointing).
 
 *   **`tests/`**: Contains all tests for the project.
