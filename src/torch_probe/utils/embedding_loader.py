@@ -1,12 +1,12 @@
 # src/torch_probe/utils/embedding_loader.py
 from typing import Optional
+
+import h5py  # Make sure h5py is in your pyproject.toml dependencies
 import numpy as np
-import h5py # Make sure h5py is in your pyproject.toml dependencies
+
 
 def load_elmo_embeddings_for_sentence(
-    hdf5_file_object: h5py.File, 
-    sentence_key: str, 
-    layer_index: int
+    hdf5_file_object: h5py.File, sentence_key: str, layer_index: int
 ) -> Optional[np.ndarray]:
     """
     Loads ELMo embeddings for a specific sentence and layer from an open HDF5 file object.
@@ -24,7 +24,7 @@ def load_elmo_embeddings_for_sentence(
         print(f"Warning: Sentence key '{sentence_key}' not found in HDF5 file.")
         return None
 
-    feature_stack = hdf5_file_object[sentence_key][()] 
+    feature_stack = hdf5_file_object[sentence_key][()]
     # Expected shape: (num_elmo_layers, num_tokens, elmo_embedding_dim)
     # e.g., (3, num_tokens, 1024) for standard ELMo
 
@@ -33,20 +33,25 @@ def load_elmo_embeddings_for_sentence(
         return None
 
     if feature_stack.ndim != 3:
-        print(f"Warning: Feature stack for key '{sentence_key}' has unexpected ndim {feature_stack.ndim} (expected 3). Shape: {feature_stack.shape}")
+        print(
+            f"Warning: Feature stack for key '{sentence_key}' has unexpected ndim {feature_stack.ndim} (expected 3). Shape: {feature_stack.shape}"
+        )
         return None
-    
+
     num_layers_in_stack = feature_stack.shape[0]
     if not (0 <= layer_index < num_layers_in_stack):
-        print(f"Warning: Invalid layer_index {layer_index} for key '{sentence_key}'. "
-              f"Stack has {num_layers_in_stack} layers. Shape: {feature_stack.shape}")
+        print(
+            f"Warning: Invalid layer_index {layer_index} for key '{sentence_key}'. "
+            f"Stack has {num_layers_in_stack} layers. Shape: {feature_stack.shape}"
+        )
         return None
 
     single_layer_features = feature_stack[layer_index, :, :]
     # Expected shape: (num_tokens, elmo_embedding_dim)
     return single_layer_features
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # Example Usage (requires a dummy HDF5 file to be created for testing)
     # This is better tested with pytest and a fixture.
     # To run this standalone, you'd need to:

@@ -1,4 +1,3 @@
-
 """
 Unit tests for ProbeDataset and collate_probe_batch in dataset.py
 
@@ -8,12 +7,12 @@ with dummy data files (CoNLL-U and HDF5) generated via pytest's tmp_path fixture
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import List
+
 import h5py
 import numpy as np
-import torch
 import pytest
-from pathlib import Path
-from typing import List, Dict
 
 from torch_probe.dataset import ProbeDataset, collate_probe_batch
 
@@ -21,25 +20,34 @@ from torch_probe.dataset import ProbeDataset, collate_probe_batch
 # Helpers to create dummy data
 # -----------------------------------------------------------------------------
 
-def create_dummy_conllu(path: Path, sents: List[List[str]], heads: List[List[int]], upos: List[List[str]]) -> None:
+
+def create_dummy_conllu(
+    path: Path, sents: List[List[str]], heads: List[List[int]], upos: List[List[str]]
+) -> None:
     lines = []
     for i, (tokens, hs, tags) in enumerate(zip(sents, heads, upos)):
         for j, (tok, head, tag) in enumerate(zip(tokens, hs, tags), start=1):
-            lines.append(f"{j}\t{tok}\t_\t{tag}\t_\t_\t{head if head != -1 else 0}\tdep\t_\t_")
+            lines.append(
+                f"{j}\t{tok}\t_\t{tag}\t_\t_\t{head if head != -1 else 0}\tdep\t_\t_"
+            )
         lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def create_dummy_hdf5(path: Path, sents: List[List[str]], layers: int = 3, dim: int = 5) -> None:
+def create_dummy_hdf5(
+    path: Path, sents: List[List[str]], layers: int = 3, dim: int = 5
+) -> None:
     with h5py.File(path, "w") as f:
         for i, tokens in enumerate(sents):
             # Corrected shape: (layers, tokens, dim)
-            data = np.random.rand(layers, len(tokens), dim).astype(np.float32) 
+            data = np.random.rand(layers, len(tokens), dim).astype(np.float32)
             f.create_dataset(str(i), data=data)
+
 
 # -----------------------------------------------------------------------------
 # Dataset Tests
 # -----------------------------------------------------------------------------
+
 
 @pytest.fixture
 def dummy_data(tmp_path: Path):
@@ -69,7 +77,7 @@ def test_dataset_getitem_depth(dummy_data):
     assert item["embeddings"].shape[0] == len(sents[0])
     assert item["gold_labels"].shape == (len(sents[0]),)
     assert item["tokens"] == sents[0]
-    expected = [h-1 if h >= 0 else -1 for h in heads[0]]
+    expected = [h - 1 if h >= 0 else -1 for h in heads[0]]
     assert item["head_indices"] == expected
     assert item["length"] == len(sents[0])
     ds.close_hdf5()
@@ -111,9 +119,11 @@ def test_dataset_out_of_bounds(dummy_data):
         _ = ds[len(ds)]
     ds.close_hdf5()
 
+
 # -----------------------------------------------------------------------------
 # Collation Tests
 # -----------------------------------------------------------------------------
+
 
 def test_collate_depth(dummy_data):
     conllu, hdf5, _, _ = dummy_data
@@ -122,7 +132,9 @@ def test_collate_depth(dummy_data):
     collated = collate_probe_batch(batch)
     assert collated["embeddings_batch"].shape[0] == 2
     assert collated["labels_batch"].shape[1] == max(item["length"] for item in batch)
-    assert (collated["labels_batch"] != -1).sum() == sum(len(b["gold_labels"]) for b in batch)
+    assert (collated["labels_batch"] != -1).sum() == sum(
+        len(b["gold_labels"]) for b in batch
+    )
     ds.close_hdf5()
 
 

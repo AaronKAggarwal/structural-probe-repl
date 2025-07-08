@@ -9,7 +9,7 @@ authors = [
     {name = "Aaron Aggarwal", email = "aggarwal.aaron@gmail.com"}
 ]
 readme = "README.md"
-requires-python = "^3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     # Pinning sensitive ML frameworks is good practice
     "torch==2.2.0",
@@ -35,8 +35,52 @@ packages = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
+ruff = "^0.12.2"
 
-# Build system configuration remains the same.
 [build-system]
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "src/legacy",
+]
+
+
+# Set the maximum line length. Black's default is 88.
+line-length = 888
+# Assume Python 3.11 for all checks.
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable the 'E' (pycodestyle error), 'W' (pycodestyle warning),
+# 'F' (Pyflakes), and 'I' (isort) rule sets.
+select = ["E", "W", "F", "I"]
+
+# You can ignore specific rules if needed. For example, E501 (line too long)
+# is often handled by the formatter, but it's good to have it here.
+# ignore = ["E501"]
+
+[tool.ruff.format]
+# Use double quotes for strings where possible.
+quote-style = "double"

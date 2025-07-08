@@ -3,18 +3,20 @@
 from __future__ import annotations
 
 import math
-import torch
-import pytest
 
-from torch_probe.probe_models import DistanceProbe, DepthProbe
+import pytest
+import torch
+
 from torch_probe.loss_functions import (
-    distance_l1_loss,
     depth_l1_loss,
+    distance_l1_loss,
 )
+from torch_probe.probe_models import DepthProbe, DistanceProbe
 
 # ---------------------------------------------------------------------------
 # Probe model tests
 # ---------------------------------------------------------------------------
+
 
 def test_distance_probe_init_and_forward_shapes():
     embed_dim = 4
@@ -68,9 +70,11 @@ def test_probe_parameters_learnable():
     after = probe.projection_layer.weight.clone().detach()
     assert not torch.allclose(before, after)
 
+
 # ---------------------------------------------------------------------------
 # Loss function tests
 # ---------------------------------------------------------------------------
+
 
 def test_depth_l1_loss_simple():
     # batch 2, max_len 3
@@ -87,12 +91,24 @@ def test_depth_l1_loss_simple():
 
 def test_distance_l1_loss_simple():
     # One sentence length 3
-    pred = torch.tensor([[[0.0, 1.0, 4.0],  # Predicted SQUARED L2
-                          [1.0, 0.0, 1.0],
-                          [4.0, 1.0, 0.0]]])
-    gold = torch.tensor([[[0.0, 1.0, 5.0],  # Gold NON-SQUARED
-                          [1.0, 0.0, 1.0],
-                          [5.0, 1.0, 0.0]]])
+    pred = torch.tensor(
+        [
+            [
+                [0.0, 1.0, 4.0],  # Predicted SQUARED L2
+                [1.0, 0.0, 1.0],
+                [4.0, 1.0, 0.0],
+            ]
+        ]
+    )
+    gold = torch.tensor(
+        [
+            [
+                [0.0, 1.0, 5.0],  # Gold NON-SQUARED
+                [1.0, 0.0, 1.0],
+                [5.0, 1.0, 0.0],
+            ]
+        ]
+    )
     lengths = torch.tensor([3])
 
     # H&M style normalization: sum over all LxL pairs, then divide by L^2
@@ -100,9 +116,11 @@ def test_distance_l1_loss_simple():
     # sum_abs_diff_full_matrix = 0+0+1 + 0+0+0 + 1+0+0 = 2
     # L=3, L^2=9
     expected = 2.0 / 9.0  # Approximately 0.2222...
-    
+
     loss = distance_l1_loss(pred, gold, lengths)
-    assert math.isclose(loss.item(), expected, rel_tol=1e-4) # math.isclose might need import
+    assert math.isclose(
+        loss.item(), expected, rel_tol=1e-4
+    )  # math.isclose might need import
 
 
 def test_distance_loss_zero_when_no_pairs():
