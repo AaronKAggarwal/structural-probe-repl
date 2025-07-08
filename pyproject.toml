@@ -1,46 +1,42 @@
+# /pyproject.toml (Best Practice Refactored Version)
+
+# PEP 621 standard metadata table. This is the source of truth for name, version, etc.
 [project]
 name = "structural-probe-repl"
 version = "0.1.0"
-description = ""
+description = "A replication and extension of Hewitt & Manning's (2019) structural probe."
 authors = [
-    {name = "Aaron Aggarwal",email = "aggarwal.aaron@gmail.com"}
+    {name = "Aaron Aggarwal", email = "aggarwal.aaron@gmail.com"}
 ]
 readme = "README.md"
 requires-python = "^3.11"
 dependencies = [
-    "torch (==2.2.0)",
-    "transformers (==4.40.0)",
-    "datasets (==3.5.1)",
-    "scipy (==1.15.2)",
-    "scikit-learn (==1.6.1)",
-    "numpy (>=1.26.4,<2.0.0)",
-    "h5py (>=3.13.0,<4.0.0)",
-    "hydra-core (>=1.3.2,<2.0.0)",
-    "hydra-joblib-launcher (>=1.2.0,<2.0.0)",
-    "wandb (>=0.19.11,<0.20.0)",
-    "matplotlib (>=3.10.3,<4.0.0)",
-    "tdqm (>=0.0.1,<0.0.2)"
+    # Pinning sensitive ML frameworks is good practice
+    "torch==2.2.0",
+    "numpy>=1.26.4,<2.0.0", 
+    # Using PEP 440 specifiers
+    "transformers>=4.40.0,<5.0.0",
+    "datasets>=3.5.1,<4.0.0",
+    "scipy>=1.15.2,<2.0.0",
+    "scikit-learn>=1.6.1,<2.0.0",
+    "h5py>=3.13.0,<4.0.0",
+    "hydra-core>=1.3.2,<2.0.0",
+    "hydra-joblib-launcher>=1.2.0,<2.0.0",
+    "wandb>=0.19.11,<0.20.0",
+    "matplotlib>=3.10.3,<4.0.0",
 ]
 
+# Poetry-specific configuration
 [tool.poetry]
-name = "structural_probe_repl"
-version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+# This section is now much smaller. It does NOT repeat name, version, authors, etc.
 packages = [
     { include = "torch_probe", from = "src" },
-    # Add other packages from src if you have them
 ]
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 
-
-
+# Build system configuration remains the same.
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
