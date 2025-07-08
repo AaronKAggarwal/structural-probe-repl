@@ -1,0 +1,27 @@
+# configs/experiment/elmo_fullewt_dist_probe.yaml
+defaults:
+  - override /dataset: ud_english_ewt_full
+  - override /embeddings: elmo_l2_ud_ewt_full
+  - override /probe: distance_rank128 # Or a different rank, e.g., 768 or full 1024
+  - override /training: default_adam_fulldata 
+  - _self_ 
+
+probe:
+  type: "distance" 
+
+training: # Consider adjusting batch size / epochs for larger dataset
+  batch_size: 64 
+  epochs: 40 # H&M used 40 for PTB
+  patience: 5 # Or 10
+  early_stopping_metric: "uuas" 
+  early_stopping_delta: 0.001 
+
+evaluation: 
+  metrics: ["spearmanr_hm", "uuas"] # Ensure using H&M style Spearman
+
+logging:
+  experiment_name: "elmo_fullewt_dist_r${probe.rank}"
+  wandb:
+    enable: true # Recommended for tracking longer runs
+    project: "structural-probes-modern" # Or your project
+    tags: ["elmo", "ud_ewt_full", "distance", "phase1_validation"]

@@ -24,6 +24,7 @@ output_hdf5:
 
 runtime:
   device: "auto" # "cpu", "mps", "cuda", "auto"
+  batch_size: 32
 
 # Hydra specific settings for this script's runs
 hydra:
