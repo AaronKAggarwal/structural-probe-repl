@@ -139,90 +139,112 @@ def test_spearmanr_hm_empty_input():
 # --- Tests for calculate_uuas (Now require all_xpos_tags) ---
 def test_uuas_perfect_match():
     pred_dists = [np.array([[0, 0.5, 2.0], [0.5, 0, 0.4], [2.0, 0.4, 0]], dtype=np.float32)]
-    gold_heads = [[-1, 0, 1]] 
+    gold_heads = [[-1, 0, 1]]
     lengths = [3]
-    xpos_tags: List[List[str]] = [["NN", "VB", "NN"]] # Using PTB-style tags
-    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags)
+    xpos_tags: List[List[str]] = [["NN", "VB", "NN"]]
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "NOUN"]] # Dummy UPOS tags
+    # FIX: Add missing arguments
+    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_uuas, 1.0)
 
 def test_uuas_no_match():
-    pred_dists = [np.array([[0, 1.9, 2.0], [1.9, 0, 0.5], [2.0, 0.5, 0]], dtype=np.float32)] # MST: (1,2), (0,1) -> after remapping (1,2), (0,1)
-    gold_heads = [[-1, 0, 0]] # Gold non-punct edges: (0,1), (0,2)
+    pred_dists = [np.array([[0, 1.9, 2.0], [1.9, 0, 0.5], [2.0, 0.5, 0]], dtype=np.float32)]
+    gold_heads = [[-1, 0, 0]]
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "JJ"]]
-    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags)
-    # Gold: {(0,1), (0,2)}. Pred: {(0,1), (1,2)}. Intersection: {(0,1)}. UUAS = 1/2 = 0.5
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "ADJ"]] # Dummy UPOS tags
+    # FIX: Add missing arguments
+    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_uuas, 0.5)
 
 def test_uuas_with_punctuation_ignored_xpos():
     pred_dists_full = [np.array([
-        [0, 0.5, 5, 5],  # N
-        [0.5, 0, 5, 5],  # V
-        [5, 5, 0, 0.1], # P1 ('.')
-        [5, 5, 0.1, 0]   # P2 (',')
+        [0, 0.5, 5, 5], [0.5, 0, 5, 5], [5, 5, 0, 0.1], [5, 5, 0.1, 0]
     ], dtype=np.float32)]
-    gold_heads_full = [[1, -1, 1, 1]] 
+    gold_heads_full = [[1, -1, 1, 1]]
     lengths = [4]
-    xpos_tags: List[List[str]] = [["NN", "VB", ".", ","]] # Using H&M punctuation XPOS
-    
-    mean_uuas, _ = calculate_uuas(pred_dists_full, gold_heads_full, lengths, xpos_tags)
+    xpos_tags: List[List[str]] = [["NN", "VB", ".", ","]]
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT", "PUNCT"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_uuas, _ = calculate_uuas(pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_uuas, 1.0)
 
 def test_uuas_all_punctuation_xpos():
     pred_dists_full = [np.array([[0, 0.1],[0.1, 0]], dtype=np.float32)]
-    gold_heads_full = [[-1, 0]] 
+    gold_heads_full = [[-1, 0]]
     lengths = [2]
-    xpos_tags: List[List[str]] = [[".", ","]] # All H&M punctuation XPOS
-    mean_uuas, _ = calculate_uuas(pred_dists_full, gold_heads_full, lengths, xpos_tags)
+    xpos_tags: List[List[str]] = [[".", ","]]
+    upos_tags: List[List[str]] = [["PUNCT", "PUNCT"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_uuas, _ = calculate_uuas(pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_uuas, 0.0)
 
-def test_uuas_short_sentence_xpos(): 
+def test_uuas_short_sentence_xpos():
     pred_dists = [np.array([[0]], dtype=np.float32)]
     gold_heads = [[-1]]
     lengths = [1]
     xpos_tags: List[List[str]] = [["NN"]]
-    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags)
-    assert mean_uuas == 0.0 # No edges in a 1-node graph
+    upos_tags: List[List[str]] = [["NOUN"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_uuas, _ = calculate_uuas(pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
+    assert mean_uuas == 0.0
     
-    mean_uuas_empty, _ = calculate_uuas([], [], [], [])
+    mean_uuas_empty, _ = calculate_uuas([], [], [], [], [], "xpos")
     assert mean_uuas_empty == 0.0
 
+# --- Tests for calculate_root_accuracy (These also failed) ---
 
-# --- Tests for calculate_root_accuracy (Now require all_xpos_tags) ---
 def test_root_accuracy_correct_xpos():
-    pred_depths = [np.array([0.1, 0.5, 0.3])] 
-    gold_heads = [[-1, 0, 0]] 
+    pred_depths = [np.array([0.1, 0.5, 0.3])]
+    gold_heads = [[-1, 0, 0]]
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "JJ"]]
-    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags)
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "ADJ"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_acc, 1.0)
 
 def test_root_accuracy_with_punctuation_ignored_xpos():
-    pred_depths = [np.array([0.5, 0.8, 0.1, 0.9])] 
-    gold_heads = [[-1, 0, 0, 0]] 
+    pred_depths = [np.array([0.5, 0.8, 0.1, 0.9])]
+    gold_heads = [[-1, 0, 0, 0]]
     lengths = [4]
-    xpos_tags: List[List[str]] = [["NN", "VB", ".", "JJ"]] # "." is H&M punctuation
-    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags)
-    assert np.isclose(mean_acc, 1.0) # Predicted root is NN (idx 0, depth 0.5) after ignoring '.'
+    xpos_tags: List[List[str]] = [["NN", "VB", ".", "JJ"]]
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT", "ADJ"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
+    assert np.isclose(mean_acc, 1.0)
 
 def test_root_accuracy_gold_root_is_punctuation_xpos():
-    pred_depths = [np.array([0.8, 0.5, 0.1])] 
-    gold_heads = [[2, 2, -1]] # Punct (idx 2) is gold root
+    pred_depths = [np.array([0.8, 0.5, 0.1])]
+    gold_heads = [[2, 2, -1]]
     lengths = [3]
-    xpos_tags: List[List[str]] = [["NN", "VB", "."]] # "." is H&M punctuation
-    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags)
-    # No non-punctuation gold root, so num_evaluable_sentences should be 0, or acc is 0.
+    xpos_tags: List[List[str]] = [["NN", "VB", "."]]
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT"]] # Dummy UPOS
+    # FIX: Add missing arguments
+    mean_acc, _ = calculate_root_accuracy(pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos")
     assert np.isclose(mean_acc, 0.0)
 
 def test_root_accuracy_empty_or_short_xpos():
-    mean_acc_empty, _ = calculate_root_accuracy([], [], [], [])
+    # FIX: Add missing arguments
+    mean_acc_empty, _ = calculate_root_accuracy([], [], [], [], [], "xpos")
     assert mean_acc_empty == 0.0
     
-    mean_acc_len0, _ = calculate_root_accuracy([np.array([])], [[]], [0], [[]])
+    mean_acc_len0, _ = calculate_root_accuracy([np.array([])], [[]], [0], [[]], [[]], "xpos")
     assert mean_acc_len0 == 0.0
     
-    mean_acc_len1_nonpunct, _ = calculate_root_accuracy([np.array([0.1])], [[-1]], [1], [["NN"]])
+    mean_acc_len1_nonpunct, _ = calculate_root_accuracy([np.array([0.1])], [[-1]], [1], [["NN"]], [["NOUN"]], "xpos")
     assert np.isclose(mean_acc_len1_nonpunct, 1.0)
     
-    mean_acc_len1_punct, _ = calculate_root_accuracy([np.array([0.1])], [[-1]], [1], [[","]])
+    mean_acc_len1_punct, _ = calculate_root_accuracy([np.array([0.1])], [[-1]], [1], [[","]], [["PUNCT"]], "xpos")
     assert np.isclose(mean_acc_len1_punct, 0.0)
+
+# Optional: Add new tests for the "upos" strategy
+def test_uuas_with_punctuation_ignored_upos():
+    pred_dists_full = [np.array([[0, 0.5, 5, 5],[0.5, 0, 5, 5],[5, 5, 0, 0.1],[5, 5, 0.1, 0]], dtype=np.float32)]
+    gold_heads_full = [[1, -1, 1, 1]]
+    lengths = [4]
+    xpos_tags: List[List[str]] = [["NN", "VB", ".", "PUNCT_XPOS_EQUIVALENT"]]
+    upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT", "SYM"]] # Use UPOS tags for filtering
+    # FIX: Add missing arguments and test "upos" strategy
+    mean_uuas, _ = calculate_uuas(pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "upos")
+    assert np.isclose(mean_uuas, 1.0)
