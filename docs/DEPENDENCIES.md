@@ -1,6 +1,6 @@
 # Dependency Notes
 
-Last updated: 2025-05-26
+Last updated: 2025-07-09
 
 This document outlines key software dependencies, their versions or version constraints, and the rationale for these choices across the different development and execution environments used in the `structural-probe-repl` project.
 
@@ -28,6 +28,7 @@ This environment is managed by **Poetry** and is intended for local development 
 | **W&B (`wandb`)**        | (Latest stable)               | Optional: For experiment tracking and visualization. (Dev dependency or main if widely used) |
 | **tqdm**                 | (Latest stable)               | For progress bars in scripts.                                                          |
 | **Docker Desktop**       | (Latest stable for macOS)     | For building and running `linux/amd64` containers (legacy probe, future CUDA workloads) via Rosetta 2 emulation. Rosetta must be enabled. |
+| **Ruff**                 | (Latest stable, e.g., `^0.x.x`)| **Primary Linter & Formatter.** Installed via Poetry. Used for ensuring code quality and consistent style. |
 
 _The full list of native dependencies and their exact resolved versions are managed by Poetry and stored in `poetry.lock`. A reference `requirements-mps.txt` can be generated using `poetry export`._
 
