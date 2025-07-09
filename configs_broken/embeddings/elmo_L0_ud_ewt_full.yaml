@@ -1,8 +1,0 @@
-# configs/embeddings/elmo_L0_ud_ewt_full.yaml
-source_model_name: "elmo_original_5.5B_ud_ewt_full_L0" # Indicate Layer 0
-layer_index: 0 # 0-indexed, so ELMo's 1st layer (output of CharCNN)
-paths:
-  train: "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-train.elmo-layers.hdf5"
-  dev:   "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-dev.elmo-layers.hdf5"
-  test:  "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-test.elmo-layers.hdf5"
-dimension: 1024 

@@ -1,8 +1,0 @@
-# configs/dataset/ptb_tinysample_for_sanity.yaml
-# Points to the tiny 2-sentence CoNLL-X sample file for sanity checks.
-
-name: "ptb_tinysample_sanity_check"
-paths:
-  conllu_train: "data/ptb_stanford_dependencies_conllx/ptb3-wsj-TINY_SAMPLE.conllx"
-  conllu_dev: "data/ptb_stanford_dependencies_conllx/ptb3-wsj-TINY_SAMPLE.conllx" # Use same for dev
-  conllu_test: null # No separate test for this tiny sample check
