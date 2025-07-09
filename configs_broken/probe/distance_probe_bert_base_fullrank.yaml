@@ -1,0 +1,3 @@
+# configs/probe/distance_probe_bert_base_fullrank.yaml
+type: "distance"
+rank: 768

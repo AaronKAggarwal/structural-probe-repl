@@ -1,0 +1,20 @@
+# @package _global_
+# configs/experiment/elmo_ewt_dist_phase1_MY_SAMPLE_train.yaml
+defaults:
+  - override /dataset: elmo_ewt_MY_sample
+  - override /embeddings: elmo_l2_MY_sample 
+  - override /probe: distance_rank32 
+  - override /training: default_adam
+  - _self_ 
+
+probe:
+  type: "distance" 
+training:
+  epochs: 100 # Keep short for initial test
+  patience: 10 # For quick stop if needed
+evaluation: 
+  metrics: ["spearmanr", "uuas"]
+logging:
+  experiment_name: "elmo_ewt_dist_r32_phase1_my_sample"
+  wandb:
+    enable: false 

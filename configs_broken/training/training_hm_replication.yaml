@@ -1,0 +1,18 @@
+# configs/training/training_hm_replication.yaml
+optimizer:
+  name: "Adam"
+  lr: 0.001
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+  weight_decay: 0.0
+batch_size: 20
+epochs: 40
+patience: 10 # Or a suitable value for overall stopping
+early_stopping_metric: "loss" 
+lr_scheduler_with_reset:
+  enable: true
+  lr_decay_factor: 0.1
+  lr_decay_patience: 1 # Key for H&M style: decay if no improvement in 1 epoch
+  min_lr: 1.0e-6 
+save_every_epoch_checkpoint: false
+save_checkpoint_every_n_epochs: 5 # Or 10, for these longer runs

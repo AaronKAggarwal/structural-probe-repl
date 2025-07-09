@@ -1,0 +1,8 @@
+# configs/embeddings/elmo_l2_ud_ewt_full.yaml
+source_model_name: "elmo_original_5.5B_ud_ewt_full"
+layer_index: 2 # H&M used layer 2 for ELMo in their paper for PTB
+paths:
+  train: "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-train.elmo-layers.hdf5"
+  dev:   "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-dev.elmo-layers.hdf5"
+  test:  "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-test.elmo-layers.hdf5"
+dimension: 1024 

@@ -1,0 +1,21 @@
+# configs/experiment/elmo_fullewt_dist_L0_probe.yaml
+defaults:
+  - override /dataset: ud_english_ewt_full
+  - override /embeddings: elmo_l0_ud_ewt_full # <--- Point to L0 embedding config
+  - override /probe: distance_rank128 
+  - override /training: default_adam_fulldata # Or training_hm_replication
+  - _self_ 
+
+probe:
+  type: "distance" 
+
+training: 
+  early_stopping_metric: "uuas" 
+
+logging:
+  experiment_name: "elmo_fullewt_dist_L0_r${probe.rank}"
+  wandb:
+    enable: true 
+    project: "structural-probes-modern" 
+    entity: "aggarwal-k-aaron" 
+    tags: ["elmo", "ud_ewt_full", "distance", "L0", "r${probe.rank}"]

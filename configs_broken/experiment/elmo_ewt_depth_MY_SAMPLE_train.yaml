@@ -1,0 +1,32 @@
+# @package _global_
+# configs/experiment/elmo_ewt_depth_phase1_train.yaml
+# This experiment will train a DEPTH probe on the ELMo EWT sample data.
+
+defaults:
+  # Use the dataset and embeddings configs that point to whykay-01's data
+  # (or your self-generated data if you prefer, but be consistent)
+  - override /dataset: elmo_ewt_MY_sample 
+  - override /embeddings: elmo_l2_MY_sample      
+  - override /probe: depth_rank32         # <--- Use depth probe config
+  - override /training: default_adam          
+  - _self_                                
+
+# Specific overrides for this experiment
+probe:
+  type: "depth" # Ensure this is explicitly set
+
+training:
+  epochs: 30 
+  patience: 10 # Can adjust patience
+  # For depth, 'spearmanr' or 'root_acc' are good metrics to monitor.
+  # Or stick with 'loss' initially for simplicity.
+  early_stopping_metric: "spearmanr" # Options: loss, spearmanr, root_acc
+  early_stopping_delta: 0.001       # For spearmanr/root_acc, mode should be "max"
+
+evaluation: 
+  metrics: ["spearmanr", "root_acc"] # Metrics for depth probe
+
+logging:
+  experiment_name: "elmo_ewt_depth_r32_phase1_train" # Custom name for this run
+  wandb:
+    enable: false

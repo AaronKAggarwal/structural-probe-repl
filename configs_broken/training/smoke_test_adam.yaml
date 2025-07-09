@@ -1,0 +1,29 @@
+# configs/training/smoke_test_adam.yaml
+# Minimal training parameters for quick smoke testing
+
+optimizer:
+  name: "Adam"
+  lr: 0.001
+  # betas, eps, weight_decay will use Adam's defaults if not specified here,
+  # or you can add them from your training_hm_replication.yaml if desired for consistency
+
+batch_size: 1 # Process one sentence at a time for detailed debugging if needed
+epochs: 2     # Just a couple of epochs for sanity check
+
+# Early stopping (use a very lenient patience for smoke test to ensure it runs a bit)
+patience: 2
+early_stopping_metric: "loss" 
+early_stopping_delta: 0.001 
+
+# LR scheduler - disable for simplest smoke test unless testing it specifically
+lr_scheduler_with_reset:
+  enable: false
+  # lr_decay_factor: 0.1
+  # lr_decay_patience: 1
+  # min_lr: 1.0e-7
+
+# Checkpointing - enable to ensure it works
+save_every_epoch_checkpoint: true 
+save_checkpoint_every_n_epochs: -1 # Disabled
+
+clip_grad_norm: null

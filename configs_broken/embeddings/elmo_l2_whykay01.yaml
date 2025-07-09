@@ -1,0 +1,32 @@
+# configs/embeddings/elmo_l2_whykay01.yaml
+
+# Human-readable identifier for this embedding set
+source_model_name: "elmo_original_5.5B_from_whykay01_fork"
+
+# Specific layer of ELMo to use (0-indexed)
+# Layer 0: Character CNN output
+# Layer 1: First biLSTM output
+# Layer 2: Second biLSTM output (often used, and used in H&M example prd_en_ewt-ud-sample.yaml)
+layer_index: 2
+
+# Paths to the HDF5 files containing the pre-computed embeddings
+# These paths are relative to the original working directory (project root)
+# where the main script (e.g., scripts/train_probe.py) is launched.
+# Your train_probe.py script uses hydra.utils.get_original_cwd() to resolve these.
+paths:
+  train: "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.elmo-layers.hdf5"
+  dev:   "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.elmo-layers.hdf5"
+  test:  "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-test.elmo-layers.hdf5"
+  # If you don't have a test set for this specific sample, you can set test to null
+  # test: null 
+
+# Dimensionality of the ELMo embeddings at the specified layer
+# For standard ELMo, this is 1024.
+# This can be set to null to have ProbeDataset infer it, but explicit is good for config clarity.
+dimension: 1024
+
+# Optional: Information about how these embeddings were created (for reproducibility/logging)
+# This is not used by the ProbeDataset directly but good for tracking.
+# generation_details:
+#   source_script: "N/A - Sourced from whykay-01 fork, presumed original H&M example"
+#   alignment_strategy: "N/A - ELMo produces word-level embeddings directly for whitespace tokenized input"

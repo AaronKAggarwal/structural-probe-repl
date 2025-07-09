@@ -1,0 +1,10 @@
+# configs/embeddings/bert_base_L7_ud_ewt.yaml
+source_model_name: "bert-base-cased_ud_ewt_L7"
+# For bert-base-cased, "all" layers in HDF5 means 13 items (0=initial_embed, 1-12=layer_outputs)
+# Layer 7 output is index 7 in this 0-indexed list of hidden_states.
+layer_index: 7 
+paths:
+  train: "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_train_layers-all_align-mean.hdf5"
+  dev:   "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_dev_layers-all_align-mean.hdf5"
+  test:  "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_test_layers-all_align-mean.hdf5"
+dimension: 768 # BERT-base hidden dimension
