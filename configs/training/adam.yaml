@@ -1,0 +1,12 @@
+optimizer:
+  name: Adam
+  lr: 0.001
+loss_function: "l1_squared_diff"
+clip_grad_norm: null
+batch_size: 64
+epochs: 40
+patience: 10
+early_stopping_metric: uuas
+early_stopping_delta: 0.0
+save_every_epoch_checkpoint: false
+save_checkpoint_every_n_epochs: -1

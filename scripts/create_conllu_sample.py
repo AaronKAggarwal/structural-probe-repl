@@ -29,7 +29,7 @@ def create_sample(input_filepath, output_filepath, num_sentences):
 
 
 def main():
-    base_input_dir = Path("data_staging/ud_ewt_full")
+    base_input_dir = Path("data/ud_english_ewt_official")
     base_output_dir = Path(
         "data_staging/my_ewt_sample_for_legacy_probe/example/data/en_ewt-ud-sample"
     )

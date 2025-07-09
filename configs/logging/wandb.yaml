@@ -1,0 +1,9 @@
+# configs/logging/wandb.yaml
+wandb:
+  enable: true
+  project: "structural-probes-modern"
+  entity: "aggarwal-k-aaron"
+  
+  # These will be overridden by the specific experiment file
+  name: "default_run_${now:%H-%M-%S}" 
+  tags: ["default"]

@@ -1,0 +1,3 @@
+device: mps
+seed: 42
+num_workers: 0

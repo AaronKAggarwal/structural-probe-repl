@@ -1,0 +1,5 @@
+lr_scheduler_with_reset:
+  enable: true
+  lr_decay_factor: 0.5      # already added
+  lr_decay_patience: 5
+  min_lr: 1.0e-5            # ← new: floor value when each decay step hits this, it stops
