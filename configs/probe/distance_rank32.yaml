@@ -1,5 +1,0 @@
-# configs/probe/distance_rank32.yaml
-type: "distance"
-rank: 32
-# psd_constraint: True # Add if your probe model supports this
-# initialization: "default_pytorch"

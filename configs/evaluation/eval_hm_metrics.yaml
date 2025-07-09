@@ -1,6 +1,6 @@
 # configs/evaluation/eval_hm_metrics.yaml
 metrics: ["loss", "spearmanr_hm", "uuas", "root_acc"]
-spearman_min_len: 5
-spearman_max_len: 50
-filter_by_non_punct_len: false
+
+# The two crucial settings for H&M replication:
 punctuation_strategy: "xpos"
+filter_by_non_punct_len: false

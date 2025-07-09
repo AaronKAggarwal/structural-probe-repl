@@ -1,0 +1,18 @@
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/elmo/L1
+  - /probe: depth
+  - /probe_rank@probe: "128"
+  - /training: adam
+  - /training/schedule_hm
+  - /runtime: mps
+  - /logging: wandb
+
+evaluation:
+  metrics: ["spearmanr_hm", "root_acc"]
+
+logging:
+  experiment_name: "rerun_elmo_fullewt_depth_L1_r${probe.rank}"
+  wandb:
+    tags: ["elmo", "ud_ewt_full", "depth", "L1", "r${probe.rank}"]

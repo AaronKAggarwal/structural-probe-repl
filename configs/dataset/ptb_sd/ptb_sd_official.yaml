@@ -1,0 +1,6 @@
+# configs/dataset/ptb_sd_official.yaml
+name: "ptb_sd_official_splits"
+paths:
+  conllu_train: "data_staging/ptb_stanford_dependencies_conllx/ptb3-wsj-train.conllx"
+  conllu_dev: "data_staging/ptb_stanford_dependencies_conllx/ptb3-wsj-dev.conllx"
+  conllu_test: "data_staging/ptb_stanford_dependencies_conllx/ptb3-wsj-test.conllx"

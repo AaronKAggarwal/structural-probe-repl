@@ -1,5 +1,0 @@
-# configs/probe/distance_rank4_smoke.yaml
-# Minimal rank probe for quick smoke testing
-
-type: "distance"
-rank: 4

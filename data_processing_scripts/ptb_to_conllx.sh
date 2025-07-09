@@ -13,7 +13,7 @@ CORENLP_HOME="/Users/aaronaggarwal/tools/stanford-corenlp-3.9.2/stanford-corenlp
 # Output directory for processed files within your project
 # Assuming this script is run from structural-probe-repl/data_processing_scripts/
 PROJECT_ROOT_GUESS="$(cd "$(dirname "$0")/.." && pwd)" # Tries to guess project root
-OUTPUT_BASE_DIR="${PROJECT_ROOT_GUESS}/data/ptb_stanford_dependencies_conllx"
+OUTPUT_BASE_DIR="${PROJECT_ROOT_GUESS}/data_staging/ptb_stanford_dependencies_conllx"
 TEMP_TREES_DIR="${OUTPUT_BASE_DIR}/temp_trees" # For intermediate concatenated .trees files
 
 # Java memory allocation

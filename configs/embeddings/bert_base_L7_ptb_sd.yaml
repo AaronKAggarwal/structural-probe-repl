@@ -1,8 +1,0 @@
-# configs/embeddings/bert_base_L7_ptb_sd.yaml
-source_model_name: "bert-base-cased_ptb_sd_L7"
-layer_index: 7 # Selects the output of the 7th transformer layer (8th item if 0 is embeddings)
-paths:
-  train: "data/embeddings_ptb_sd/bert-base-cased_train_layers-all_align-mean.hdf5"
-  dev: "data/embeddings_ptb_sd/bert-base-cased_dev_layers-all_align-mean.hdf5"
-  test: "data/embeddings_ptb_sd/bert-base-cased_test_layers-all_align-mean.hdf5"
-dimension: 768

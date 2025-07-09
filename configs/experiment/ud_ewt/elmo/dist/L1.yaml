@@ -1,0 +1,21 @@
+# configs/experiment/ud_baselines/elmo_fullewt_dist_L1_probe.yaml
+# This runs a distance probe on the middle layer (L1) of ELMo on the full UD EWT dataset.
+
+name: ud_ewt/elmo/dist/L1
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/elmo/L1
+  - /probe: distance
+  - /probe_rank@probe: "128" # Using the same rank as the L1 experiment for consistency
+  - /training: adam # Using default adam training + schedule
+  - /training/schedule_hm
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: wandb
+
+logging:
+  experiment_name: "rerun_elmo_fullewt_dist_L1_r${probe.rank}"
+  wandb:
+    tags: ["elmo", "ud_ewt_full", "distance", "L1", "r${probe.rank}"]

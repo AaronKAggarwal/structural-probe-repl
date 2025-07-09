@@ -1,0 +1,8 @@
+# configs/embeddings/ud_ewt/bert-base-cased/L7.yaml
+source_model_name: "bert-base-cased"
+layer_index: 7
+dimension: 768
+paths:
+  train: "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_train_layers-all_align-mean.hdf5"
+  dev: "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_dev_layers-all_align-mean.hdf5"
+  test: "data_staging/ud_ewt_official_processed/bert_base_cased_hdf5_layers/bert-base-cased_test_layers-all_align-mean.hdf5"
