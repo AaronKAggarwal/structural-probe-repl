@@ -1,0 +1,9 @@
+# configs/embeddings/ptb_sd/bert-base-cased/L0_tinysample.yaml
+# BERT Layer 0 (initial embeddings) for the tiny PTB sample.
+source_model_name: "bert-base-cased_tinysample"
+layer_index: 0 # Assuming the HDF5 for this was generated with just a few layers.
+dimension: 768
+paths:
+  train: "data_staging/embeddings/embeddings_sanity_check/bert-base-cased_sample_dev_layers-0_6_12_align-mean.hdf5"
+  dev: "data_staging/embeddings/embeddings_sanity_check/bert-base-cased_sample_dev_layers-0_6_12_align-mean.hdf5"
+  test: null

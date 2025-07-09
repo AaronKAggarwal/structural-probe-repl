@@ -1,6 +1,0 @@
-# configs/dataset/elmo_ewt_sample_whykay01.yaml
-name: "elmo_ewt_sample_whykay01"
-paths:
-  conllu_train: "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-train.conllu"
-  conllu_dev:   "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-dev.conllu"
-  conllu_test:  "src/legacy/structural_probe/example/data/en_ewt-ud-sample/en_ewt-ud-test.conllu"

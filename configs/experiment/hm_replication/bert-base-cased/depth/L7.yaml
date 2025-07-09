@@ -1,0 +1,20 @@
+# configs/experiment/hm_replication/bert_base_L7_depth_ptb_sd.yaml
+# Replicates the DEPTH probe for BERT L7 on PTB-SD.
+
+defaults:
+  - _self_
+  - /dataset: ptb_sd/ptb_sd_official
+  - /embeddings: ptb_sd/bert-base-cased/L7
+  - /probe: depth  # <-- Changed to depth
+  - /probe_rank@probe: "768"
+  - /training: training_hm_replication
+  - /runtime: mps
+  - /logging: wandb
+
+evaluation:
+  metrics: ["spearmanr_hm", "root_acc"] # <-- Metrics for depth probe
+
+logging:
+  experiment_name: "H&M_Repl_BERTbase_L7_Depth_PTBSD"
+  wandb:
+    tags: ["hm_replication", "bert-base", "layer7", "depth", "ptb_sd"]
