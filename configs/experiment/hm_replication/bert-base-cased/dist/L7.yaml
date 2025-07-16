@@ -1,0 +1,19 @@
+# configs/experiment/hm_replication/bert_base_L7_dist_ptb_sd.yaml
+# This file composes all the components needed for the H&M replication run.
+
+defaults:
+  - _self_
+  - /dataset: ptb_sd/ptb_sd_official
+  - /embeddings: ptb_sd/bert-base-cased/L7
+  - /probe: distance
+  - /probe_rank@probe: "768" # Use full rank for this model
+  - /training: training_hm_replication
+  - /evaluation: eval_hm_metrics
+  - /runtime: mps
+  - /logging: wandb # Re-uses the wandb config from your friend
+
+# You can add specific logging overrides here if you want
+logging:
+  experiment_name: "H&M_Repl_BERTbase_L7_Dist_PTBSD"
+  wandb:
+    tags: ["hm_replication", "bert-base", "layer7", "distance", "ptb_sd"]

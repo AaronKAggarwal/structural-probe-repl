@@ -1,0 +1,19 @@
+# configs/experiment/hm_style_baselines/ud_ewt/bert/dist/L7.yaml
+
+name: hm_style_baselines/ud_ewt/bert/dist/L7
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/bert-base-cased/L7
+  - /probe: distance
+  - /probe_rank@probe: "768" # BERT-base dim
+  - /training: training_hm_replication # Apply H&M training hyperparameters
+  - /evaluation: eval_hm_metrics # Apply H&M evaluation settings (xpos, no length filter)
+  - /runtime: mps # Assuming 'mps' as your default runtime
+  - /logging: wandb
+
+logging:
+  experiment_name: "HM_Style_UDEWT_BERT_L7_Dist_R768"
+  wandb:
+    tags: ["hm_style_baseline", "ud_ewt", "bert-base", "layer7", "distance", "r768"]

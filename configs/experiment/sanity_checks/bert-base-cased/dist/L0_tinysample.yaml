@@ -1,0 +1,18 @@
+# configs/experiment/sanity_checks/bert_L0_tinysample.yaml
+# Composes configs for a quick pipeline sanity check.
+
+defaults:
+  - _self_
+  - /dataset: ptb_sd/ptb_tinysample_for_sanity
+  - /embeddings: ptb_sd/bert-base-cased/L0_tinysample
+  - /probe: distance
+  - /probe_rank@probe: "4"
+  - /training: smoke_test
+  - /evaluation: default
+  - /runtime: mps
+
+logging:
+  wandb:
+    enable: false
+  enable_plots: false
+  experiment_name: "SANITY_CHECK_BERT_L0"

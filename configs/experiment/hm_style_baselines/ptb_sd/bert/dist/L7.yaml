@@ -1,0 +1,19 @@
+# configs/experiment/hm_style_baselines/ptb_sd/bert/dist/L7.yaml
+
+name: hm_style_baselines/ptb_sd/bert/dist/L7
+
+defaults:
+  - _self_
+  - /dataset: ptb_sd/ptb_sd_official
+  - /embeddings: ptb_sd/bert-base-cased/L7
+  - /probe: distance
+  - /probe_rank@probe: "768" # BERT-base dim
+  - /training: training_hm_replication # Apply H&M training hyperparameters
+  - /evaluation: eval_hm_metrics # Apply H&M evaluation settings (xpos, no length filter)
+  - /runtime: mps # Assuming 'mps' as your default runtime, adjust if using 'cpu' etc.
+  - /logging: wandb
+
+logging:
+  experiment_name: "HM_Style_PTBSD_BERT_L7_Dist_R768"
+  wandb:
+    tags: ["hm_style_baseline", "ptb_sd", "bert-base", "layer7", "distance", "r768"]
