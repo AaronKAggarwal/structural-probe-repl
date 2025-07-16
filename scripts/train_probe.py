@@ -373,6 +373,15 @@ def train(cfg: DictConfig) -> Optional[float]:
         train_pbar = tqdm(
             train_loader, desc=f"Epoch {epoch + 1} Training", unit="batch", leave=False
         )
+
+        # --- START OF MODIFICATION ---
+        limit_train_batches = cfg.training.get("limit_train_batches", -1)
+        if limit_train_batches > 0:
+            log.warning(
+                f"!!! Limiting training to {limit_train_batches} batches for this epoch !!!"
+            )
+        # --- END OF MODIFICATION ---
+
         for batch_idx, batch in enumerate(train_pbar):
             embeddings_b = batch["embeddings_batch"].to(device, non_blocking=True)
             labels_b = batch["labels_batch"].to(device, non_blocking=True)
@@ -413,6 +422,11 @@ def train(cfg: DictConfig) -> Optional[float]:
                     commit=True,
                 )
 
+            # --- START OF MODIFICATION ---
+            if limit_train_batches > 0 and (batch_idx + 1) >= limit_train_batches:
+                break
+            # --- END OF MODIFICATION ---
+
         avg_train_loss = (
             epoch_train_loss / num_train_batches if num_train_batches > 0 else 0.0
         )
@@ -424,9 +438,24 @@ def train(cfg: DictConfig) -> Optional[float]:
 
         log.info(f"Running validation for epoch {epoch + 1}...")
         # <<< MERGED CHANGE 1 of 3 >>>
+        limit_batches = cfg.training.get("limit_eval_batches", -1)
+        if limit_batches > 0:
+            log.warning(
+                f"!!! Limiting validation to {limit_batches} batches for this run !!!"
+            )
+            dev_loader_for_eval = [
+                batch for i, batch in enumerate(dev_loader) if i < limit_batches
+            ]
+            train_loader_for_eval = [
+                batch for i, batch in enumerate(train_loader) if i < limit_batches
+            ]
+        else:
+            dev_loader_for_eval = dev_loader
+            train_loader_for_eval = train_loader
+
         dev_metrics_full = evaluate_probe(
             probe_model,
-            dev_loader,
+            dev_loader_for_eval,
             loss_fn,
             device,
             cfg.probe.type,
@@ -492,70 +521,77 @@ def train(cfg: DictConfig) -> Optional[float]:
         for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
             wandb_log_data_epoch[f"dev/{k}"] = v_met
 
-        log.info(f"Running evaluation on training set for epoch {epoch + 1}...")
-        # <<< MERGED CHANGE 2 of 3 >>>
-        train_eval_metrics_full = evaluate_probe(
-            probe_model,
-            train_loader,
-            loss_fn,
-            device,
-            cfg.probe.type,
-            filter_by_non_punct_len=cfg.evaluation.get("filter_by_non_punct_len", True),
-            punctuation_strategy=cfg.evaluation.get("punctuation_strategy", "upos"),
-            spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
-            spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
-        )
+        if cfg.training.get("eval_on_train_epoch_end", True):
+            log.info(f"Running evaluation on training set for epoch {epoch + 1}...")
+            # <<< MERGED CHANGE 2 of 3 >>>
+            train_eval_metrics_full = evaluate_probe(
+                probe_model,
+                train_loader_for_eval,
+                loss_fn,
+                device,
+                cfg.probe.type,
+                filter_by_non_punct_len=cfg.evaluation.get(
+                    "filter_by_non_punct_len", True
+                ),
+                punctuation_strategy=cfg.evaluation.get("punctuation_strategy", "upos"),
+                spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
+                spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
+            )
 
-        train_eval_summary_metrics = {}
-        train_eval_detailed_metrics_data = {}
-        for k, v_met in train_eval_metrics_full.items():
-            if k in scalar_metric_keys_to_log:
-                if isinstance(v_met, (float, int, np.number)):
-                    train_eval_summary_metrics[k] = v_met
-            elif (
-                "_per_sentence" in k
-                or "_individual_scores_in_range" in k
-                or "_by_length_group" in k
+            train_eval_summary_metrics = {}
+            train_eval_detailed_metrics_data = {}
+            for k, v_met in train_eval_metrics_full.items():
+                if k in scalar_metric_keys_to_log:
+                    if isinstance(v_met, (float, int, np.number)):
+                        train_eval_summary_metrics[k] = v_met
+                elif (
+                    "_per_sentence" in k
+                    or "_individual_scores_in_range" in k
+                    or "_by_length_group" in k
+                ):
+                    train_eval_detailed_metrics_data[k] = v_met
+
+            log_msg_train_eval = f"Epoch {epoch + 1} Train Eval Metrics (Summary): "
+            for k in scalar_metric_keys_to_log:
+                if k in train_eval_summary_metrics:
+                    v_met = train_eval_summary_metrics[k]
+                    log_msg_train_eval += f"{k}: {v_met:.4f} "
+            log.info(log_msg_train_eval)
+
+            train_detailed_metrics_path = (
+                output_dir / f"train_detailed_metrics_epoch{epoch + 1}.json"
+            )
+            with open(train_detailed_metrics_path, "w") as f:
+                json.dump(train_eval_detailed_metrics_data, f, indent=2)
+            log.info(
+                f"Saved detailed train set evaluation metrics to {train_detailed_metrics_path}"
+            )
+
+            if (
+                cfg.logging.wandb.enable
+                and wandb.run
+                and cfg.logging.wandb.get("log_train_detailed_artifact", False)
             ):
-                train_eval_detailed_metrics_data[k] = v_met
+                train_eval_artifact_name = (
+                    f"{wandb.run.name}-train_metrics_epoch_{epoch + 1}"
+                    if wandb.run
+                    else f"{cfg.logging.experiment_name}-train_metrics_epoch_{epoch + 1}"
+                )
+                train_eval_artifact = wandb.Artifact(
+                    name=train_eval_artifact_name, type="metrics_detailed"
+                )
+                train_eval_artifact.add_file(str(train_detailed_metrics_path))
+                wandb.log_artifact(train_eval_artifact)
 
-        log_msg_train_eval = f"Epoch {epoch + 1} Train Eval Metrics (Summary): "
-        for k in scalar_metric_keys_to_log:
-            if k in train_eval_summary_metrics:
-                v_met = train_eval_summary_metrics[k]
-                log_msg_train_eval += f"{k}: {v_met:.4f} "
-        log.info(log_msg_train_eval)
-
-        train_detailed_metrics_path = (
-            output_dir / f"train_detailed_metrics_epoch{epoch + 1}.json"
-        )
-        with open(train_detailed_metrics_path, "w") as f:
-            json.dump(train_eval_detailed_metrics_data, f, indent=2)
-        log.info(
-            f"Saved detailed train set evaluation metrics to {train_detailed_metrics_path}"
-        )
-
-        if (
-            cfg.logging.wandb.enable
-            and wandb.run
-            and cfg.logging.wandb.get("log_train_detailed_artifact", False)
-        ):
-            train_eval_artifact_name = (
-                f"{wandb.run.name}-train_metrics_epoch_{epoch + 1}"
-                if wandb.run
-                else f"{cfg.logging.experiment_name}-train_metrics_epoch_{epoch + 1}"
+            for (
+                k,
+                v_met,
+            ) in train_eval_summary_metrics.items():  # Log summary scalars to W&B
+                wandb_log_data_epoch[f"train_eval/{k}"] = v_met
+        else:
+            log.info(
+                f"Skipping evaluation on training set for epoch {epoch + 1} as per config."
             )
-            train_eval_artifact = wandb.Artifact(
-                name=train_eval_artifact_name, type="metrics_detailed"
-            )
-            train_eval_artifact.add_file(str(train_detailed_metrics_path))
-            wandb.log_artifact(train_eval_artifact)
-
-        for (
-            k,
-            v_met,
-        ) in train_eval_summary_metrics.items():  # Log summary scalars to W&B
-            wandb_log_data_epoch[f"train_eval/{k}"] = v_met
 
         if cfg.logging.wandb.enable and wandb.run:
             wandb.log(wandb_log_data_epoch, step=epoch + 1)

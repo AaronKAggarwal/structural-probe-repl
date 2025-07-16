@@ -1,18 +1,21 @@
 #!/bin/bash
-# This script runs a 1-epoch smoke test for all major experiment configs.
-# It helps verify that all paths and Hydra compositions are correct.
-# The script will exit immediately if any command fails.
+#
+# Runs all smoke test suites sequentially.
+#
 set -e
 
-echo "--- Testing Sanity Check Config ---"
-poetry run python scripts/train_probe.py experiment=sanity_checks/bert-base-cased/dist/L0_tinysample
+# Get the directory of the current script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+TEST_SUITE_DIR="$SCRIPT_DIR/smoke_tests"
 
-echo -e "\n--- Testing H&M Replication (Depth) Config ---"
-poetry run python scripts/train_probe.py experiment=hm_replication/bert-base-cased/depth/L7 training.epochs=1 training.batch_size=2 logging.wandb.enable=false
+echo "Running all smoke test suites..."
 
-echo -e "\n--- Testing UD Baselines (Depth) Configs ---"
-poetry run python scripts/train_probe.py experiment=ud_ewt/elmo/depth/L0 training.epochs=1 training.batch_size=2 logging.wandb.enable=false
-poetry run python scripts/train_probe.py experiment=ud_ewt/elmo/depth/L1 training.epochs=1 training.batch_size=2 logging.wandb.enable=false
-poetry run python scripts/train_probe.py experiment=ud_ewt/elmo/depth/L2 training.epochs=1 training.batch_size=2 logging.wandb.enable=false
+# Find all test scripts in the smoke_tests directory and run them
+for test_script in "$TEST_SUITE_DIR"/*.sh; do
+  if [ -f "$test_script" ]; then
+    echo -e "\n\n>>>>>>>>>> Running suite: $(basename "$test_script") <<<<<<<<<<"
+    bash "$test_script"
+  fi
+done
 
-echo -e "\n\n All tested configurations loaded and ran for one epoch successfully!"
+echo -e "\n\n ALL SMOKE TEST SUITES PASSED! "
