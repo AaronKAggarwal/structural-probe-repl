@@ -1,0 +1,3 @@
+# configs/logging/hm_ptb_sd_dist_L7.yaml
+wandb:
+  tags: ["hm_style_baseline","ptb_sd","bert-base","layer7","distance","r768"]
