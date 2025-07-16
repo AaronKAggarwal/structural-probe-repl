@@ -1,0 +1,2 @@
+  wandb:
+    tags: ["hm_style_baseline", "ud_ewt", "elmo", "layer0", "distance", "r128"]

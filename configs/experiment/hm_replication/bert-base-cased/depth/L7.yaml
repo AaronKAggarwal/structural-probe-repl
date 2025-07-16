@@ -1,6 +1,8 @@
 # configs/experiment/hm_replication/bert_base_L7_depth_ptb_sd.yaml
 # Replicates the DEPTH probe for BERT L7 on PTB-SD.
 
+name: hm_replication/bert-base-cased/depth/L7
+
 defaults:
   - _self_
   - /dataset: ptb_sd/ptb_sd_official
@@ -8,6 +10,7 @@ defaults:
   - /probe: depth  # <-- Changed to depth
   - /probe_rank@probe: "768"
   - /training: training_hm_replication
+  - /evaluation: eval_hm_metrics
   - /runtime: mps
   - /logging: hm_ptb_sd_depth_L7
 
