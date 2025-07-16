@@ -12,9 +12,7 @@ defaults:
   - /training: training_hm_replication # Re-using H&M's training schedule
   - /evaluation: default
   - /runtime: mps
-  - /logging: wandb
+  - /logging: ud_ewt_bert_L7_dist_r768
 
 logging:
-  experiment_name: "bert_base_L7_dist_udewt_r${probe.rank}"
-  wandb:
-    tags: ["bert-base", "L7", "ud_ewt_full", "distance", "r${probe.rank}"]
+  experiment_name: "ud_ewt_bert_L7_dist_r768"

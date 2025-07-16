@@ -4,6 +4,6 @@ source_model_name: elmo
 layer_index: 0
 dimension: 1024
 paths:
-  train: data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-train.elmo-layers.hdf5
-  dev:   data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-dev.elmo-layers.hdf5
-  test:  data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-test.elmo-layers.hdf5
+  train: "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-train.elmo-layers.hdf5"
+  dev:   "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-dev.elmo-layers.hdf5"
+  test:  "data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-test.elmo-layers.hdf5"

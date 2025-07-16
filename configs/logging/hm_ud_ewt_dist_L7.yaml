@@ -1,0 +1,2 @@
+  wandb:
+    tags: ["hm_style_baseline", "ud_ewt", "bert-base", "layer7", "distance", "r768"]

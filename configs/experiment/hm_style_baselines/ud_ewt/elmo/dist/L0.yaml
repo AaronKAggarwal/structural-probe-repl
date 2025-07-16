@@ -11,7 +11,7 @@ defaults:
   - /training: training_hm_replication # Apply H&M training hyperparameters
   - /evaluation: eval_hm_metrics # Apply H&M evaluation settings (xpos, no length filter)
   - /runtime: mps # Assuming 'mps' as your default runtime
-  - /logging: wandb
+  - /logging: hm_ud_ewt_dist_L0
 
 logging:
   experiment_name: "HM_Style_UDEWT_ELMo_L0_Dist_R128"

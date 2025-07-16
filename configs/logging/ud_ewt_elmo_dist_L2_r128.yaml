@@ -1,0 +1,2 @@
+  wandb:
+    tags: ["elmo", "ud_ewt_full", "distance", "L2", "r${probe.rank}"]

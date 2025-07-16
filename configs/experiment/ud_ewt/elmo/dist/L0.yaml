@@ -13,9 +13,7 @@ defaults:
   - /training/schedule_hm
   - /evaluation: default
   - /runtime: mps
-  - /logging: wandb
+  - /logging: ud_ewt_elmo_dist_L0_r128
 
 logging:
-  experiment_name: "rerun_elmo_fullewt_dist_L0_r${probe.rank}"
-  wandb:
-    tags: ["elmo", "ud_ewt_full", "distance", "L0", "r${probe.rank}"]
+  experiment_name: "ud_ewt_elmo_dist_L0_r128"

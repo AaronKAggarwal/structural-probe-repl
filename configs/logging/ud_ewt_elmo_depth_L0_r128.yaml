@@ -1,0 +1,2 @@
+  wandb:
+    tags: ["elmo", "ud_ewt_full", "depth", "L0", "r${probe.rank}"]

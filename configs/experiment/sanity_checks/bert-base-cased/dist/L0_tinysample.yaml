@@ -1,6 +1,8 @@
 # configs/experiment/sanity_checks/bert_L0_tinysample.yaml
 # Composes configs for a quick pipeline sanity check.
 
+name: sanity_checks/bert-base-cased/dist/L0_tinysample
+
 defaults:
   - _self_
   - /dataset: ptb_sd/ptb_tinysample_for_sanity

@@ -9,12 +9,10 @@ defaults:
   - /probe_rank@probe: "768"
   - /training: training_hm_replication
   - /runtime: mps
-  - /logging: wandb
+  - /logging: hm_ptb_sd_depth_L7
 
 evaluation:
   metrics: ["spearmanr_hm", "root_acc"] # <-- Metrics for depth probe
 
 logging:
   experiment_name: "H&M_Repl_BERTbase_L7_Depth_PTBSD"
-  wandb:
-    tags: ["hm_replication", "bert-base", "layer7", "depth", "ptb_sd"]

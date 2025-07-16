@@ -7,12 +7,10 @@ defaults:
   - /training: adam
   - /training/schedule_hm
   - /runtime: mps
-  - /logging: wandb
+  - /logging: ud_ewt_elmo_depth_L2_r128
 
 evaluation:
   metrics: ["spearmanr_hm", "root_acc"]
 
 logging:
-  experiment_name: "rerun_elmo_fullewt_depth_L2_r${probe.rank}"
-  wandb:
-    tags: ["elmo", "ud_ewt_full", "depth", "L2", "r${probe.rank}"]
+  experiment_name: "ud_ewt_elmo_depth_L2_r128"

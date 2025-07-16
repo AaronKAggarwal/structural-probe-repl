@@ -1,0 +1,2 @@
+  wandb:
+    tags: ["bert-base", "L7", "ud_ewt_full", "distance", "r${probe.rank}"]
