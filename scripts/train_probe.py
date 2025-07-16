@@ -133,6 +133,25 @@ def train(cfg: DictConfig) -> Optional[float]:
     original_cwd = Path(hydra_cfg.runtime.cwd)
     current_process_cwd = Path.cwd()
 
+    exp = cfg.get("experiment", None)
+    log.info("Experiment.probe subtree:\n" + OmegaConf.to_yaml(exp.probe))
+    log.info("Raw experiment subtree: " + OmegaConf.to_yaml(exp))
+
+    if exp and exp.get("name"):
+        # 1) Pull the run name up for WandB / output naming
+        cfg.experiment_name = exp.name
+
+        # 2) Merge all the known top‑level sections so that
+        #    only the experiment overrides apply, but defaults remain.
+
+        for section in ("dataset", "embeddings", "probe", "training", "evaluation", "runtime"):
+            if section in exp:
+                cfg[section] = OmegaConf.merge(cfg[section], exp[section])
+
+        # 3) Logging: merge only the wandb sub‑dict (experiment_name is already handled)
+        if exp.logging and exp.logging.get("wandb"):
+            cfg.logging.wandb = OmegaConf.merge(cfg.logging.wandb, exp.logging.wandb)
+
     log_resolved_config(cfg, original_cwd)
 
     log.info(f"Output directory for this run (from HydraConfig): {output_dir}")
