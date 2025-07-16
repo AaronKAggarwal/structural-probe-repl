@@ -1,6 +1,6 @@
 # Build / Debug History (structural-probe-repl)
 
-Last updated: 2025-05-26
+Last updated: 2025-07-16
 
 This document tracks significant milestones, challenges, and resolutions encountered during the setup and development of the project environments and codebase.
 
@@ -39,5 +39,13 @@ This document tracks significant milestones, challenges, and resolutions encount
 | June 10-15  | UD Data Integration & ELMo Prep           | Needed to prepare full UD English EWT dataset. Refactored data prep scripts to be generic instead of sample-specific. | Acquired UD EWT CoNLL-U files. Used new generic scripts (`convert_conllu_to_raw_generic.py`, `generate_elmo_embeddings_generic.sh`) to create ELMo HDF5s for all splits. |
 | June 16-17  | UD Baseline Runs (ELMo & BERT)            | Monitor metric for experiments switched to UUAS for more direct performance tracking. Long training times for full dataset. | Configured and ran Distance Probes on full UD EWT for ELMo (L0, L1, L2) and BERT-L7. Confirmed expected performance patterns, establishing strong baselines for UD. |
 | **(Current/Next)** | **Phase 3: Systematic Probing of Modern LLMs on UD** | Planning next models for probing (e.g., Llama, Mistral) on UD EWT.                               | Begin embedding extraction for next set of models using `scripts/extract_embeddings.py`.                                                                               |
+
+| **Phase 2c: Configuration & Testing Refactor** |                                                                                               |                                                                                                                                                                              |
+|-------------|-------------------------------------------|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| July 16     | Hydra Config Standardization              | Initial test runs revealed Hydra errors (`InterpolationKeyError`, `Could not append...`).       | Discovered inconsistencies in experiment configs. **Standardized all `experiment/*.yaml` files to include a `name` key.** This resolved the `InterpolationKeyError` for `${experiment.name}`. |
+| July 16     | Smoke Test Optimization                   | Smoke tests were too slow (~15-30 mins per run), as they evaluated on the full train/dev sets. | **Added `limit_train_batches` and `limit_eval_batches` to `train_probe.py` and configs.** This allows tests to run on a small subset of data, reducing test time to seconds. |
+| July 16     | Smoke Test Script Refactor                | Single `test_all_configs.sh` was monolithic, making it hard to debug a specific experiment set. | **Replaced the single script with a modular suite in `scripts/smoke_tests/`.** Created separate scripts for H&M replication, baselines, etc., allowing for isolated and faster re-testing. |
+| July 16     | Hydra Override Refinement                 | Test scripts failed due to `+` vs. no-prefix override conflicts between different training configs (`adam.yaml` vs `training_hm_replication.yaml`). | **Updated test scripts to use `++key=value` syntax** for command-line overrides. This robustly adds the key if it doesn't exist or overrides it if it does, handling all config variations correctly. |
+| July 16     | **Milestone: Fast, Modular Testing**      | The experimental framework is now fully refactored, and all configurations pass a rapid smoke test. | The project has a stable and scalable configuration and testing setup, ready for the next phase of systematic probing. **Phase 2c COMPLETE.**                            |
 
 (This history will be appended as the project progresses.)

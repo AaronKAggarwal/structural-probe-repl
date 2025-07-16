@@ -1,6 +1,6 @@
 # Repository Architecture
 
-Last updated: 2025-06-17 <!-- Updated date -->
+Last updated: 2025-07-16 <!-- Updated date -->
 
 This document explains the layout of the `structural-probe-repl` project, covering the vendored original Hewitt & Manning (2019) codebase and the new, modern PyTorch implementation.
 
@@ -21,12 +21,13 @@ This section details the structure of the current project, which uses a modern P
     *   `config.yaml`: Main default configuration.
     *   `config_extract.yaml`: Main configuration for `scripts/extract_embeddings.py`.
     *   `dataset/`: Configs defining datasets. Now includes both `ptb_sd_official.yaml` (for H&M replication) and **`ud_english_ewt_full.yaml`** for the project's primary experiments.
-    *   `embeddings/`: Configs for pre-computed embeddings. Includes configs for both PTB-based HDF5s (e.g., `bert_base_L7_ptb_sd.yaml`) and UD-based HDF5s (e.g., **`elmo_l1_ud_ewt_full.yaml`**).
-    *   `experiment/`: Composable experiment configurations, including `hm_replication/` for PTB and **`ud_replication/`** (or similar) for UD baselines.
-    *   `probe/`: Configs for different probe types and ranks (e.g., `distance_rank128.yaml`).
+    *   `embeddings/`: Configs for pre-computed embeddings. Includes configs for both PTB-based HDF5s and UD-based HDF5s.
+    *   `experiment/`: Composable experiment configurations that define a complete experiment by pointing to other config groups. Each file must have a top-level `name` key.
+    *   `probe/`: Configs for different probe types (e.g., `distance.yaml`, `depth.yaml`).
+    *   `probe_rank/`: Defines discrete choices for probe rank (e.g., `128.yaml`), which are merged into the main probe config at runtime.
     *   `training/`: Configs for training parameters (e.g., `training_hm_replication.yaml`).
     *   `evaluation/`: Configs for evaluation settings (e.g., `eval_hm_metrics.yaml`).
-    *   <!-- Added this new directory -->
+    *   `logging/`: Contains specific logging configurations (e.g., for W&B tags) that can be swapped out per experiment.
     *   `extraction/`: Dedicated, single-use configs for large embedding extraction jobs (e.g., **`bert_base_cased_ud_ewt_all_layers.yaml`**).
 
 *   **`data/`**: (Gitignored by default)
@@ -48,7 +49,6 @@ This section details the structure of the current project, which uses a modern P
 
 *   **`data_processing_scripts/`**: Shell scripts for data preparation.
     *   `ptb_to_conllx.sh`: Script to convert PTB `.mrg` constituency parses to Stanford Dependencies (CoNLL-X format). Used for H&M replication.
-    *   <!-- Added these generic scripts -->
     *   `convert_conllu_to_raw_generic.py`: Generic script to convert any CoNLL-U/X file to raw text, needed for legacy ELMo embedding generation.
     *   `generate_elmo_embeddings_generic.sh`: Generic script to generate legacy-style ELMo HDF5s for any raw text file.
 
@@ -58,6 +58,8 @@ This section details the structure of the current project, which uses a modern P
     *   **Modern Probe Pipeline:**
         *   `extract_embeddings.py`: Main Hydra-configurable script for extracting word-aligned hidden state embeddings from Hugging Face Transformer models for any given CoNLL-X/U dataset.
         *   `train_probe.py`: Main Hydra-configurable script for training and evaluating modern structural probes.
+    *   **`scripts/smoke_tests/`**: A suite of modular smoke test scripts for rapidly verifying different sets of experiment configurations (e.g., `02_test_hm_replication.sh`).
+    *   `test_all_configs.sh`: A master script that executes all individual test suites within the `scripts/smoke_tests/` directory.
 
 *   **`src/`**: Source code for the project.
     *   `legacy/structural_probe/`: Contains the vendored original Hewitt & Manning codebase.
@@ -73,7 +75,7 @@ This section details the structure of the current project, which uses a modern P
         *   `train_utils.py`: Helpers for training (optimizer, `LRSchedulerWithOptimizerReset`, `EarlyStopper`, checkpointing).
 
 *   **`tests/`**: Contains all tests for the project.
-    *   `smoke/`: Integration tests for the full `train_probe.py` pipeline.
+    *   `smoke/`: Integration tests for the full `train_probe.py` pipeline, typically invoked via the scripts in `scripts/smoke_tests/`.
     *   `unit/torch_probe/`: Unit tests for individual modules in `src/torch_probe/`.
 
 *   **Root Directory Files:**

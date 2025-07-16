@@ -8,10 +8,10 @@ The original paper introduced a method for identifying syntactic structure in la
 
 1.  **Replicate:** Faithfully reproduce the Hewitt & Manning probing methodology, initially by running their original PyTorch code in a containerized legacy environment and then by re-implementing the probe in a modern PyTorch framework.
 2.  **Verify:** Validate the modern probe implementation against results from H&M's original work on the Penn Treebank (PTB) dataset.
-3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax. <!-- Changed PTB to UD here -->
+3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax.
 4.  **Explore:** Investigate novel research directions based on the findings, potentially including different probe types, analysis of model training stages, or mechanistic interpretability approaches.
 
-## Current Status (as of 2025-07-08)
+## Current Status (as of 2025-07-16)
 
 *   **Phase 0: Environment Setup & Legacy Probe Replication - COMPLETE**
     *   **Native macOS Development Environment (PyTorch 2.x, MPS):** Successfully set up using Python 3.11 and Poetry. Core dependencies installed and MPS functionality verified. (See `docs/ENV_SETUP.md`)
@@ -47,7 +47,7 @@ The original paper introduced a method for identifying syntactic structure in la
 
 ## Repository Structure Overview
 
-*   **`configs/`**: Hydra configuration files for experiments. Structured by `dataset`, `embeddings`, `probe`, etc. Includes configs for both PTB and UD experiments.
+*   **`configs/`**: Hydra configuration files for experiments. Structured into composable groups like `dataset`, `embeddings`, and `probe`. Experiment-specific files in `configs/experiment/` combine these components.
 *   **`data_staging/`**: (Gitignored) Local area for downloading/preparing raw datasets.
 *   **`docs/`**: All project documentation (see `docs/DOC_INDEX.md` for a full list).
 *   **`env/`**: Dockerfiles for various environments (e.g., `Dockerfile.legacy_pt_cpu`).
@@ -56,6 +56,7 @@ The original paper introduced a method for identifying syntactic structure in la
 *   **`scripts/`**: Executable scripts (data preparation, training, evaluation).
     *   `scripts/extract_embeddings.py`: Generic script to extract embeddings for any Hugging Face model.
     *   `scripts/train_probe.py`: Main Hydra-configurable script for training and evaluating probes.
+    *   `scripts/smoke_tests/`: A suite of fast, modular scripts to validate all experiment configurations.
 *   **`src/`**: Source code for the project.
     *   `src/legacy/structural_probe/`: Vendored original Hewitt & Manning codebase.
     *   `src/torch_probe/`: Modern PyTorch re-implementation of the probe and utilities.
@@ -69,8 +70,9 @@ The original paper introduced a method for identifying syntactic structure in la
     *   Original Paper: [Hewitt & Manning (2019), A Structural Probe for Finding Syntax in Word Representations](https://www.aclweb.org/anthology/N19-1042/)
 2.  **Set up Environment:** Follow the instructions in `docs/ENV_SETUP.md` to set up either the native macOS environment or the Dockerized legacy environment.
 3.  **Explore the Code:** Refer to `docs/ARCHITECTURE.md` for a guide to the codebase.
-4.  **Run Experiments (Modern Probe):** See `docs/EXPERIMENT_PROTOCOL.md` for instructions on using `scripts/train_probe.py` with Hydra.
-5.  **Run Legacy Examples:** See `docs/ENV_SETUP.md` (Section 2) for running the legacy probe examples within Docker.
+4.  **Verify Configurations:** Run the smoke test suite to ensure all experiment setups are valid before launching a full run: `./scripts/test_all_configs.sh`.
+5.  **Run Experiments (Modern Probe):** See `docs/EXPERIMENT_PROTOCOL.md` for instructions on using `scripts/train_probe.py` with Hydra.
+6.  **Run Legacy Examples:** See `docs/ENV_SETUP.md` (Section 2) for running the legacy probe examples within Docker.
 
 ## Key Documentation Files
 

@@ -1,6 +1,6 @@
 # Experiment Protocol: Modern Structural Probe
 
-Last updated: 2025-06-17
+Last updated: 2025-07-16
 
 This document outlines the standard procedures for configuring, running, and managing experiments with the modern structural probe implemented in `scripts/train_probe.py`, and the prerequisite embedding extraction using `scripts/extract_embeddings.py`. The framework uses [Hydra](https://hydra.cc/) for flexible and powerful configuration management.
 
@@ -49,8 +49,9 @@ All experiments are controlled via YAML files in `configs/` managed by Hydra.
     *   `configs/config_extract.yaml`: Base configuration for transformer embedding extraction.
     *   `configs/extraction/`: Directory for specific, one-off extraction configs.
     *   `configs/config.yaml`: Base configuration for probe training and evaluation.
-*   **Configuration Groups:** Located in subdirectories under `configs/` (e.g., `configs/dataset/`, `configs/embeddings/`, `configs/probe/`).
-*   **Experiment Files:** Located in `configs/experiment/`. These compose configurations from different groups to define a complete probing experiment (e.g., `ud_replication/bert_base_L7_dist_ud_en_ewt.yaml`).
+*   **Configuration Groups:** Located in subdirectories under `configs/` (e.g., `configs/dataset/`, `configs/embeddings/`, `configs/probe/`, `configs/probe_rank`, `configs/logging`).
+*   **Experiment Files:** Located in `configs/experiment/`. These compose configurations from different groups to define a complete probing experiment. Each experiment file **must** contain a `name` key at the top level (e.g., `name: hm_replication/bert-base-cased/dist/L7`), which is used to automatically name the output directory.
+*   **Special Groups:** The `probe_rank` group is merged into the `probe` group at runtime using the `@` syntax (e.g., `- probe_rank@probe: "128"`), which is a clean way to manage this hyperparameter.
 
 ## 4. Stage 1: Running Embedding Extraction
 
@@ -82,66 +83,77 @@ All experiments are controlled via YAML files in `configs/` managed by Hydra.
 
 ## 5. Stage 2: Running Probe Training & Evaluation
 
-### 5.1. Punctuation Filtering in Evaluation
+### 5.1. Key Evaluation Strategies
 
-The evaluation metrics (UUAS, Spearman, RootAcc) are aligned with H&M's methodology, which ignores punctuation. **Crucially, the current implementation identifies punctuation using PTB-style XPOS tags.** This works correctly for both the PTB-SD dataset and the UD English EWT treebank (which also provides PTB-style XPOS tags). For other UD languages, this logic may need to be adapted to use the universal `UPOS == 'PUNCT'` tag.
+The evaluation pipeline has two important configurable strategies that affect metric calculation. These are controlled in your `evaluation/*.yaml` config files or via CLI override. An experiment selects its strategy by including either `/evaluation: default` or `/evaluation: eval_hm_metrics` in its `defaults` list.
 
-### 5.2. Key Evaluation Strategies
-
-The evaluation pipeline has two important configurable strategies that affect metric calculation. These are controlled in your `evaluation/*.yaml` config files or via CLI override.
-
-*   **Punctuation Filtering (`punctuation_strategy`):**
+*   **Punctuation Identification (`punctuation_strategy`):**
     *   **Goal:** To ignore punctuation tokens when calculating UUAS and Root Accuracy.
     *   **Options:**
-        *   `"xpos"` (H&M Replication): Uses the original paper's method of filtering based on a hardcoded list of PTB-style XPOS tags (e.g., `.`, `,`, `` ` ``). Use this for replicating PTB results.
-        *   `"upos"` (Default, Recommended): Uses the language-agnostic Universal POS tags `PUNCT` and `SYM`. This is the recommended strategy for all new experiments, especially on non-English UD treebanks.
+        *   `"xpos"` (**The "H&M Way"**, set in `eval_hm_metrics.yaml`): Uses the original paper's method of filtering based on a hardcoded list of PTB-style XPOS tags (e.g., `.`, `,`, `` ` ``). Use this for replicating PTB results.
+        *   `"upos"` (**The "Modern Way"**, set in `default.yaml`): Uses the language-agnostic Universal POS tags `PUNCT` and `SYM`. This is the recommended strategy for all new experiments.
 
 *   **Spearman Correlation Length Filtering (`filter_by_non_punct_len`):**
     *   **Goal:** To filter sentences for the final DSpr/NSpr macro-average, excluding very short or very long sentences.
     *   **Options:**
-        *   `false` (H&M Replication): Filters based on the sentence's original token count, including punctuation (the behavior of the original H&M code).
-        *   `true` (Default, Recommended): Filters based on the number of non-punctuation tokens in the sentence. This provides a more consistent measure of sentence complexity.
+        *   `false` (**The "H&M Way"**, set in `eval_hm_metrics.yaml`): Filters based on the sentence's original token count, including punctuation (the behavior of the original H&M code).
+        *   `true` (**The "Modern Way"**, set in `default.yaml`): Filters based on the number of non-punctuation tokens in the sentence. This provides a more consistent measure of sentence complexity.
 
-### 5.3. Learning Rate Scheduling & Checkpointing
+### 5.2. Learning Rate Scheduling & Checkpointing
 
 The training script supports an H&M-style LR decay with optimizer reset (`training.lr_scheduler_with_reset`) and granular checkpointing options, configured in your `training/*.yaml` or experiment files.
 
-### 5.4. Running a Single Experiment on UD EWT
+### 5.3. Running a Single Experiment
 
 **Command Structure:**
 ```bash
-poetry run python scripts/train_probe.py experiment=<path/to/experiment_file_name_without_yaml>
+poetry run python scripts/train_probe.py experiment=<path/to/experiment_file>
 ```
+*   **Example: Running the H&M replication for BERT Layer 7 on PTB:**
+    ```bash
+    poetry run python scripts/train_probe.py experiment=hm_replication/bert-base-cased/dist/L7
+    ```
 *   **Example: Running the ELMo Layer 1 Distance Probe Baseline on UD EWT:**
-    (Assumes `configs/experiment/elmo_fullewt_dist_L1_probe.yaml` and its dependencies exist)
     ```bash
-    poetry run python scripts/train_probe.py \
-        experiment=elmo_fullewt_dist_L1_probe \
-        logging.wandb.enable=true
-    ```
-*   **Example: Running the BERT Layer 7 Distance Probe Baseline on UD EWT:**
-    ```bash
-    poetry run python scripts/train_probe.py \
-        experiment=bert_base_L7_dist_udewt_probe \
-        logging.wandb.enable=true
+    poetry run python scripts/train_probe.py experiment=ud_ewt/elmo/dist/L1
     ```
 
-### 5.5. Running Multiple Experiments (Sweeps with Hydra Multirun)
+### 5.4. Running Sweeps and Smoke Tests
 
-Use the `-m` or `--multirun` flag to sweep over parameters.
-
-*   **Example: Sweeping ELMo layers for a distance probe on UD EWT:**
-    (This requires a base experiment file, e.g., `elmo_fullewt_dist_LAYER_SWEEP_BASE.yaml`, where the `embeddings` group can be easily overridden).
+*   **Sweeps with Hydra Multirun:** Use the `-m` or `--multirun` flag to sweep over parameters.
     ```bash
+    # Example: Sweeping ELMo layers for a distance probe on UD EWT
     poetry run python scripts/train_probe.py -m \
-      experiment=elmo_fullewt_dist_LAYER_SWEEP_BASE \
-      embeddings=elmo_l0_ud_ewt_full,elmo_l1_ud_ewt_full,elmo_l2_ud_ewt_full \
-      "logging.experiment_name=ud_ewt_elmo_L\${embeddings.layer_index}_dist"
+      experiment=ud_ewt/elmo/dist/L0,ud_ewt/elmo/dist/L1,ud_ewt/elmo/dist/L2
     ```
+*   **Smoke Testing:** To quickly verify that all configurations are valid without running a full experiment, a suite of test scripts is provided in `scripts/smoke_tests/`.
+    *   **Run all smoke tests:**
+        ```bash
+        ./scripts/test_all_configs.sh
+        ```
+    *   **Run a specific suite of tests (e.g., for H&M Replication):**
+        ```bash
+        ./scripts/smoke_tests/02_test_hm_replication.sh
+        ```
+
+### 5.5. Speeding Up Runs for Debugging
+
+To quickly debug a single experiment without waiting for the full training or evaluation to complete, you can override two special parameters on the command line.
+
+*   `training.limit_train_batches`: Restricts the training loop to a specific number of batches per epoch.
+*   `training.limit_eval_batches`: Restricts the validation loop to a specific number of batches.
+
+**Example: Debugging the PTB replication by running only 5 training and 5 validation batches.**
+```bash
+poetry run python scripts/train_probe.py \
+  experiment=hm_replication/bert-base-cased/dist/L7 \
+  ++training.limit_train_batches=5 \
+  ++training.limit_eval_batches=5
+```
 
 ## 6. Interpreting Outputs from `train_probe.py`
 
-Each run creates a unique output directory containing:
+Each run creates a unique output directory named after the experiment containing:
 *   **`.hydra/`:** Resolved configuration files (`config.yaml`, `hydra.yaml`, `overrides.yaml`).
 *   **`train_probe.log`:** Main log file from the script.
 *   **`checkpoints/`:**
@@ -161,5 +173,5 @@ Each run creates a unique output directory containing:
 
 1.  **New Dataset:** Prepare CoNLL-U files, place them in `data/`, and create a new YAML file in `configs/dataset/` defining the paths.
 2.  **New Embeddings:** Run the appropriate Stage 1 script (Section 4) to generate HDF5 files. Create a new YAML file in `configs/embeddings/` pointing to these files.
-3.  **New Experiment:** Create a YAML file in `configs/experiment/` that composes your new dataset and embedding configs, along with probe and training settings.
+3.  **New Experiment:** Create a YAML file in `configs/experiment/` that composes your new dataset and embedding configs, along with probe and training settings. **Crucially, this file must include a `name:` key that matches its path within `configs/experiment` (e.g., `name: my_group/my_model/my_probe`).**
 4.  **Run:** Execute `scripts/train_probe.py` with your new experiment file.
