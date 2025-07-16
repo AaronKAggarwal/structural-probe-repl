@@ -75,12 +75,65 @@ def set_seeds(seed: int):
         torch.cuda.manual_seed_all(seed)
 
 
+def log_resolved_config(cfg: DictConfig, original_cwd: Path) -> None:
+    """Logs the resolved Hydra configuration for key parameters."""
+    log.info("--- Resolved Experiment Configuration ---")
+
+    # Helper to resolve paths relative to the original working directory
+    def resolve_and_format_path(p_str: Optional[str]) -> str:
+        if p_str is None:
+            return "N/A"
+        path = Path(p_str)
+        resolved_path = original_cwd / path if not path.is_absolute() else path
+        exists_str = " (exists)" if resolved_path.exists() else " (DOES NOT EXIST)"
+        return f"{str(resolved_path)}{exists_str}"
+
+    # Log Experiment Info
+    log.info(f"{'Experiment Name':<20}: {cfg.logging.get('experiment_name', 'N/A')}")
+
+    # Log Dataset Info
+    log.info("  Dataset:")
+    log.info(f"    {'Name':<18}: {cfg.dataset.get('name', 'N/A')}")
+    log.info(f"    {'Train CoNLL':<18}: {resolve_and_format_path(cfg.dataset.paths.get('conllu_train'))}")
+    log.info(f"    {'Dev CoNLL':<18}: {resolve_and_format_path(cfg.dataset.paths.get('conllu_dev'))}")
+    log.info(f"    {'Test CoNLL':<18}: {resolve_and_format_path(cfg.dataset.paths.get('conllu_test'))}")
+
+    # Log Embeddings Info
+    log.info("  Embeddings:")
+    log.info(f"    {'Model Source':<18}: {cfg.embeddings.get('source_model_name', 'N/A')}")
+    log.info(f"    {'Layer Index':<18}: {cfg.embeddings.get('layer_index', 'N/A')}")
+    log.info(f"    {'Dimension':<18}: {cfg.embeddings.get('dimension', 'N/A')}")
+    log.info(f"    {'Train HDF5':<18}: {resolve_and_format_path(cfg.embeddings.paths.get('train'))}")
+    log.info(f"    {'Dev HDF5':<18}: {resolve_and_format_path(cfg.embeddings.paths.get('dev'))}")
+    log.info(f"    {'Test HDF5':<18}: {resolve_and_format_path(cfg.embeddings.paths.get('test'))}")
+
+    # Log Probe Info
+    log.info("  Probe:")
+    log.info(f"    {'Type':<18}: {cfg.probe.get('type', 'N/A')}")
+    log.info(f"    {'Rank':<18}: {cfg.probe.get('rank', 'N/A')}")
+
+    # Log Training Info
+    log.info("  Training:")
+    log.info(f"    {'Optimizer':<18}: {cfg.training.optimizer.get('name', 'N/A')}")
+    log.info(f"    {'LR':<18}: {cfg.training.optimizer.get('lr', 'N/A')}")
+    log.info(f"    {'Epochs':<18}: {cfg.training.get('epochs', 'N/A')}")
+    log.info(f"    {'Batch Size':<18}: {cfg.training.get('batch_size', 'N/A')}")
+    log.info(f"    {'Early Stop Metric':<18}: {cfg.training.get('early_stopping_metric', 'N/A')}")
+
+    # Log Evaluation Info
+    log.info("  Evaluation:")
+    log.info(f"    {'Punctuation Strategy':<18}: {cfg.evaluation.get('punctuation_strategy', 'N/A')}")
+    log.info("---------------------------------------")
+
+
 @hydra.main(config_path="../configs", config_name="config", version_base="1.3")
 def train(cfg: DictConfig) -> Optional[float]:
     hydra_cfg = HydraConfig.get()
     output_dir = Path(hydra_cfg.runtime.output_dir)
     original_cwd = Path(hydra_cfg.runtime.cwd)
     current_process_cwd = Path.cwd()
+
+    log_resolved_config(cfg, original_cwd)
 
     log.info(f"Output directory for this run (from HydraConfig): {output_dir}")
     log.info(f"Original CWD (script launch location): {original_cwd}")
