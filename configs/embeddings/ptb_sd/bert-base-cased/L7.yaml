@@ -3,6 +3,6 @@ source_model_name: "bert-base-cased"
 layer_index: 7
 dimension: 768
 paths:
-  train: "data_staging/embeddings/embeddings_ptb_sd/bert-base-cased_train_layers-all_align-mean.hdf5"
-  dev: "data_staging/embeddings/embeddings_ptb_sd/bert-base-cased_dev_layers-all_align-mean.hdf5"
-  test: "data_staging/embeddings/embeddings_ptb_sd/bert-base-cased_test_layers-all_align-mean.hdf5"
+  train: "data_staging/embeddings/ptb_sd_official_splits/bert-base-cased/ptb_sd_official_splits_conllu_train_layers-all_align-mean.hdf5"
+  dev: "data_staging/embeddings/ptb_sd_official_splits/bert-base-cased/ptb_sd_official_splits_conllu_dev_layers-all_align-mean.hdf5"
+  test: "data_staging/embeddings/ptb_sd_official_splits/bert-base-cased/ptb_sd_official_splits_conllu_test_layers-all_align-mean.hdf5"

@@ -1,0 +1,9 @@
+# This is the complete schema for an extraction job.
+# The '???' makes these choices mandatory from the command line or another config.
+defaults:
+  - job: extract_embeddings
+  - dataset: ???
+  - model: ???
+  - embeddings: default
+  - runtime: mps
+  - _self_

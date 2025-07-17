@@ -1,0 +1,5 @@
+# configs/job/train_probe.yaml
+# Settings specific to the training job
+# For now, this can be empty, but it's good to have the file.
+# You could move things like `experiment_name` logic here in the future.
+name: train_probe

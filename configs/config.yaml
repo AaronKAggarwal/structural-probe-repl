@@ -1,6 +1,8 @@
 defaults:
+  - job: train_probe
   - dataset: ud_ewt/ud_english_ewt_full
   - embeddings: ud_ewt/elmo/L1
+  - model: hf_base
   - probe: distance
   - probe_rank@probe: "128"
   - training: adam

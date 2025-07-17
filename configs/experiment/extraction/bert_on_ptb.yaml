@@ -1,0 +1,22 @@
+# This experiment file is now much cleaner.
+
+name: extraction/bert_on_ptb
+
+defaults:
+  - /dataset: ptb_sd/ptb_sd_official
+  - /model: bert-base-cased
+  - _self_
+
+# Override the specific model being used
+model:
+  hf_model_name: "bert-base-cased"
+  hf_model_name_sanitized: "bert-base-cased"
+
+# Define job-specific settings
+job:
+  # The output path can use variables from other groups
+  output_hdf5_path: "data_staging/embeddings/${dataset.name}/${model.hf_model_name_sanitized}/"
+  # Specify which layers to extract
+  layers_to_extract: [0, 7, 12]
+  # Specify the alignment strategy
+  alignment_strategy: "mean"

@@ -1,0 +1,3 @@
+# configs/model/bert-base-cased_for_ptb.yaml
+hf_model_name: "bert-base-cased"
+hf_model_name_sanitized: "bert-base-cased"

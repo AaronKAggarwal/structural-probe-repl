@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 # Use the potentially renamed read_conll_file if you adopted that change
 from .utils.conllu_reader import SentenceData, read_conll_file
 from .utils.embedding_loader import (
-    load_elmo_embeddings_for_sentence,  # Assuming this stays for ELMo, might need generalization later
+    load_embeddings_for_sentence,  # Now generalized for modern and legacy HDF5
 )
 from .utils.gold_labels import calculate_tree_depths, calculate_tree_distances
 
@@ -74,7 +74,7 @@ class ProbeDataset(Dataset):
         # Infer embedding dimension
         if self.embedding_dim is None:
             if len(self.parsed_sentences) > 0:
-                first_sent_emb = load_elmo_embeddings_for_sentence(
+                first_sent_emb = load_embeddings_for_sentence(
                     self.hdf5_file_object, "0", self.embedding_layer_index
                 )
                 if first_sent_emb is not None and first_sent_emb.ndim == 2:
@@ -102,7 +102,7 @@ class ProbeDataset(Dataset):
         sentence_data = self.parsed_sentences[idx]
         sentence_key = str(idx)
 
-        embeddings_np = load_elmo_embeddings_for_sentence(
+        embeddings_np = load_embeddings_for_sentence(
             self.hdf5_file_object, sentence_key, self.embedding_layer_index
         )
 

@@ -1,0 +1,6 @@
+# configs/model/hf_base.yaml
+
+hf_model_name: "bert-base-cased" 
+# The sanitized name will be defined in more specific model configs
+# or directly in the experiment config.
+hf_model_name_sanitized: "bert-base-cased" 

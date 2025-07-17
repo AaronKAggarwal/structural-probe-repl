@@ -128,3 +128,6 @@ src/legacy/structural_probe/example/results/
 *.tmp
 *.temp
 /temp*/
+# Ignore all tar archives
+*.tar.*
+*.tar

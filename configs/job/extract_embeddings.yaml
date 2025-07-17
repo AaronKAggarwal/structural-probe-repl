@@ -1,0 +1,7 @@
+# This file defines the default parameters for an extraction job.
+# These can be overridden from the command line.
+
+name: extract_embeddings
+output_hdf5_path: "data_staging/embeddings/${dataset.name}/${model.hf_model_name_sanitized}/"
+layers_to_extract: "all"
+alignment_strategy: "mean"

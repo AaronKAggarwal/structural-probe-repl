@@ -1,0 +1,6 @@
+# configs/embeddings/default.yaml
+# Default values for embedding-related settings.
+
+# This parameter is used by extract_embeddings.py to decide how to
+# handle subword tokens. Can be "mean", "first", etc.
+alignment_strategy: "mean"
