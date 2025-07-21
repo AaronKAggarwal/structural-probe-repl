@@ -37,8 +37,8 @@ The original paper introduced a method for identifying syntactic structure in la
         *   All data loading and evaluation code has been verified for compatibility with the UD CoNLL-U format.
     *   **UD Baseline Establishment:**
         *   Successfully ran the validated modern pipeline to establish strong baselines on UD EWT for key H&M models:
-            *   **ELMo (Distance Probe):** Layer 1 (UUAS: 0.72), Layer 2 (UUAS: 0.65), Layer 0 (UUAS: 0.32).
-            *   **BERT-base Layer 7 (Distance Probe):** UUAS ~0.80.
+            *   **ELMo (Distance Probe):** Layer 1 (UUAS: 0.72, Spearmanr: 0.71), Layer 2 (UUAS: 0.66, Spearmanr: 0.68), Layer 0 (UUAS: 0.32, Spearmanr: 0.28) on UD EWT.
+            *   **BERT-base Layer 7 (Distance Probe):** Test UUAS of 0.800 on UD EWT (Spearmanr of 0.77).
 
 *   **Next Major Phase: Systematic Probing of Modern LLMs on Universal Dependencies**
     *   Replicate depth probe baselines for ELMo and BERT on UD EWT.

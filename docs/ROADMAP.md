@@ -72,7 +72,7 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
         1.  **Select & Acquire Primary Dataset:** Chose UD English Web Treebank (EWT) as the primary dataset for all future experiments. *(Status: COMPLETE).*
         2.  **Generalize Data Prep Scripts:** Refactor ELMo data preparation scripts to be generic and argument-driven. *(Status: COMPLETE).*
         3.  **Extract Embeddings for UD EWT:** Run `extract_embeddings.py` and the new ELMo scripts to generate embeddings for ELMo (all layers) and BERT-base (L7) on the full UD EWT dataset. *(Status: COMPLETE).*
-        4.  **Establish Baselines on UD EWT:** Configure and run distance probes for ELMo and BERT-base on UD EWT to establish new, foundational baseline scores for this dataset. *(Status: COMPLETE - Key results: ELMo L1 UUAS ~72%, ELMo L2 UUAS ~65%, ELMo L0 UUAS ~32%, BERT L7 UUAS ~80%).*
+        4.  **Establish Baselines on UD EWT:** Configure and run distance probes for ELMo and BERT-base on UD EWT to establish new, foundational baseline scores for this dataset. *(Status: COMPLETE - Key results: ELMo L1 Test UUAS 0.724, ELMo L2 Test UUAS 0.658, ELMo L0 Test UUAS 0.316, BERT L7 Test UUAS 0.800).*
     *   **Deliverables:** Full UD English EWT dataset integrated into project workflow; HDF5 embeddings for baseline models on UD EWT; documented baseline performance metrics for UD EWT.
     *   **Status: COMPLETE.**
 
