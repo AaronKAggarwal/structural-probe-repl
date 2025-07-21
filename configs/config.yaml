@@ -17,10 +17,12 @@ experiment_name: ${experiment.name}
 
 hydra:
   run:
-    # The output path is now based on the choice from the 'experiment' config group.
-    dir: outputs/${experiment_name}
+    # Single-run output directory is unchanged.
+    dir: outputs/${experiment.name}
   sweep:
-    dir: multirun/${experiment_name}
-    subdir: job_${hydra.job.num}
+    # Multi-run parent directory is now named with a timestamp. This is safe.
+    dir: multirun/${now:%Y-%m-%d_%H-%M-%S}
+    # Each job's subdirectory is now descriptively named after its experiment.
+    subdir: ${experiment.name}
   job:
     chdir: true
