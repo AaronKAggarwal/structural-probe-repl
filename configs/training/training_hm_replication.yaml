@@ -5,6 +5,9 @@
 batch_size: 20
 patience: 10
 early_stopping_metric: "loss" # Hewitt & Manning monitored dev loss
+# vvv NOT IN H&M. ONLY USE FOR FASTER TESTING vvv
+# early_stopping_delta: 0.0001 # NOT IN H&M. ONLY USE FOR FASTER TESTING.
+# ^^^ NOT IN H&M. ONLY USE FOR FASTER TESTING ^^^
 
 # This overrides the lr_scheduler_with_reset block from schedule_hm.yaml
 lr_scheduler_with_reset:
