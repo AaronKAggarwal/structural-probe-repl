@@ -9,7 +9,8 @@ defaults:
   - /embeddings: ud_ewt/bert-base-cased/L7
   - /probe: distance
   - /probe_rank@probe: "768"
-  - /training: training_hm_replication # Re-using H&M's training schedule
+  - /training: adam # Re-using H&M's training schedule
+  - /training/adam_modern_scheduler
   - /evaluation: default
   - /runtime: mps
   - /logging: ud_ewt_bert_L7_dist_r768

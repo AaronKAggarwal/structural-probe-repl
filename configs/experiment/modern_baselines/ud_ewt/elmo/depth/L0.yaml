@@ -9,7 +9,7 @@ defaults:
   - /probe: depth
   - /probe_rank@probe: "128"
   - /training: adam
-  - /training/schedule_hm
+  - /training/adam_modern_scheduler
   - /runtime: mps
   - /logging: ud_ewt_elmo_depth_L0_r128
 

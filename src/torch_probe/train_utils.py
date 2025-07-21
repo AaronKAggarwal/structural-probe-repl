@@ -7,6 +7,7 @@ from typing import Any, Iterator, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # from omegaconf import DictConfig # Using Any for cfg types for simplicity in this module
 
@@ -159,6 +160,27 @@ class LRSchedulerWithOptimizerReset:
 
         return new_optimizer_to_return
 
+def get_standard_scheduler(
+    optimizer: optim.Optimizer, cfg_scheduler: Optional[Any]
+) -> Optional[ReduceLROnPlateau]:
+    """Instantiates a standard PyTorch LR scheduler based on Hydra config."""
+    if not cfg_scheduler or not cfg_scheduler.get("enable"):
+        return None
+
+    name = cfg_scheduler.get("name")
+    logger.info(f"Initializing standard LR scheduler: {name}")
+
+    if name == "ReduceLROnPlateau":
+        return ReduceLROnPlateau(
+            optimizer,
+            mode=cfg_scheduler.get("mode", "min"),
+            factor=cfg_scheduler.get("factor", 0.1),
+            patience=cfg_scheduler.get("patience", 10),
+            verbose=True,
+        )
+    # You could add other schedulers like CosineAnnealingLR here in the future
+    else:
+        raise ValueError(f"Unsupported standard scheduler name: {name}")
 
 class EarlyStopper:
     def __init__(

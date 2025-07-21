@@ -49,6 +49,7 @@ from torch_probe.train_utils import (
     EarlyStopper,
     LRSchedulerWithOptimizerReset,
     get_optimizer,
+    get_standard_scheduler,
     load_checkpoint,
     save_checkpoint,
 )
@@ -89,7 +90,7 @@ def log_resolved_config(cfg: DictConfig, original_cwd: Path) -> None:
         return f"{str(resolved_path)}{exists_str}"
 
     # Log Experiment Info
-    log.info(f"{'Experiment Name':<20}: {cfg.logging.get('experiment_name', 'N/A')}")
+    log.info(f"{'Experiment Name':<20}: {cfg.experiment.name}")
 
     # Log Dataset Info
     log.info("  Dataset:")
@@ -133,25 +134,11 @@ def train(cfg: DictConfig) -> Optional[float]:
     original_cwd = Path(hydra_cfg.runtime.cwd)
     current_process_cwd = Path.cwd()
 
-    exp = cfg.get("experiment", None)
-    log.info("Experiment.probe subtree:\n" + OmegaConf.to_yaml(exp.probe))
-    log.info("Raw experiment subtree: " + OmegaConf.to_yaml(exp))
-
-    if exp and exp.get("name"):
-        # 1) Pull the run name up for WandB / output naming
-        cfg.experiment_name = exp.name
-
-        # 2) Merge all the known top‑level sections so that
-        #    only the experiment overrides apply, but defaults remain.
-
-        for section in ("dataset", "embeddings", "probe", "training", "evaluation", "runtime"):
-            if section in exp:
-                cfg[section] = OmegaConf.merge(cfg[section], exp[section])
-
-        # 3) Logging: merge only the wandb sub‑dict (experiment_name is already handled)
-        if exp.logging and exp.logging.get("wandb"):
-            cfg.logging.wandb = OmegaConf.merge(cfg.logging.wandb, exp.logging.wandb)
-
+    # The 'experiment' config group is now the single source of truth for the experiment name
+    # The custom merging logic has been removed as Hydra handles it correctly.
+    cfg.experiment_name = cfg.experiment.name
+    log.info(f"Running experiment: {cfg.experiment_name}")
+    
     log_resolved_config(cfg, original_cwd)
 
     log.info(f"Output directory for this run (from HydraConfig): {output_dir}")
@@ -205,12 +192,7 @@ def train(cfg: DictConfig) -> Optional[float]:
     if cfg.logging.wandb.enable:
         if WANDB_AVAILABLE:
             try:
-                run_name = cfg.logging.get("experiment_name", None)
-                if run_name is None:
-                    run_name = OmegaConf.select(
-                        cfg, "hydra.job.name", default=output_dir.name
-                    )
-
+                run_name = cfg.experiment_name
                 notes_str = cfg.logging.wandb.get("notes", None)
                 if notes_str is not None and not isinstance(notes_str, str):
                     notes_str = str(notes_str)
@@ -333,8 +315,11 @@ def train(cfg: DictConfig) -> Optional[float]:
         verbose=True,
         delta=cfg.training.early_stopping_delta,
     )
+    
     lr_scheduler_custom = None
-    if cfg.training.lr_scheduler_with_reset.get("enable", False):
+    lr_scheduler_standard = None  # Initialize to None
+
+    if cfg.training.get("lr_scheduler_with_reset", {}).get("enable", False):
         lr_scheduler_custom = LRSchedulerWithOptimizerReset(
             optimizer_cfg=cfg.training.optimizer,
             lr_decay_factor=cfg.training.lr_scheduler_with_reset.lr_decay_factor,
@@ -346,7 +331,12 @@ def train(cfg: DictConfig) -> Optional[float]:
         )
         log.info("H&M-style LR decay with optimizer reset is ENABLED.")
     else:
-        log.info("H&M-style LR decay with optimizer reset is DISABLED.")
+        # Check for a standard scheduler if the custom one is disabled
+        lr_scheduler_standard = get_standard_scheduler(optimizer, cfg.training.get("scheduler"))
+        if lr_scheduler_standard:
+            log.info("Standard PyTorch LR scheduler is ENABLED.")
+        else:
+            log.info("No LR scheduler is active; using fixed learning rate.")
 
     log.info(
         f"Model, loss, optimizer, schedulers initialized. Monitoring '{monitor_metric}' in '{monitor_mode}' mode."
@@ -374,13 +364,11 @@ def train(cfg: DictConfig) -> Optional[float]:
             train_loader, desc=f"Epoch {epoch + 1} Training", unit="batch", leave=False
         )
 
-        # --- START OF MODIFICATION ---
         limit_train_batches = cfg.training.get("limit_train_batches", -1)
         if limit_train_batches > 0:
             log.warning(
                 f"!!! Limiting training to {limit_train_batches} batches for this epoch !!!"
             )
-        # --- END OF MODIFICATION ---
 
         for batch_idx, batch in enumerate(train_pbar):
             embeddings_b = batch["embeddings_batch"].to(device, non_blocking=True)
@@ -422,10 +410,8 @@ def train(cfg: DictConfig) -> Optional[float]:
                     commit=True,
                 )
 
-            # --- START OF MODIFICATION ---
             if limit_train_batches > 0 and (batch_idx + 1) >= limit_train_batches:
                 break
-            # --- END OF MODIFICATION ---
 
         avg_train_loss = (
             epoch_train_loss / num_train_batches if num_train_batches > 0 else 0.0
@@ -437,7 +423,6 @@ def train(cfg: DictConfig) -> Optional[float]:
         wandb_log_data_epoch["trainer/learning_rate"] = optimizer.param_groups[0]["lr"]
 
         log.info(f"Running validation for epoch {epoch + 1}...")
-        # <<< MERGED CHANGE 1 of 3 >>>
         limit_batches = cfg.training.get("limit_eval_batches", -1)
         if limit_batches > 0:
             log.warning(
@@ -465,15 +450,14 @@ def train(cfg: DictConfig) -> Optional[float]:
             spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
         )
 
-        # Filter for summary metrics (scalar values) for concise logging
         dev_summary_metrics = {}
-        dev_detailed_metrics_data = {}  # For detailed JSON saving
+        dev_detailed_metrics_data = {}
         scalar_metric_keys_to_log = [
             "loss",
             "spearmanr_hm",
             "uuas",
             "root_acc",
-        ]  # Define expected scalar keys
+        ]
 
         for k, v_met in dev_metrics_full.items():
             if k in scalar_metric_keys_to_log:
@@ -497,9 +481,7 @@ def train(cfg: DictConfig) -> Optional[float]:
             output_dir / f"dev_detailed_metrics_epoch{epoch + 1}.json"
         )
         with open(dev_detailed_metrics_path, "w") as f:
-            json.dump(
-                dev_detailed_metrics_data, f, indent=2
-            )  # Save only detailed parts
+            json.dump(dev_detailed_metrics_data, f, indent=2)
         log.info(f"Saved detailed dev metrics to {dev_detailed_metrics_path}")
 
         if (
@@ -510,7 +492,7 @@ def train(cfg: DictConfig) -> Optional[float]:
             dev_artifact_name = (
                 f"{wandb.run.name}-dev_metrics_epoch_{epoch + 1}"
                 if wandb.run
-                else f"{cfg.logging.experiment_name}-dev_metrics_epoch_{epoch + 1}"
+                else f"{cfg.experiment_name}-dev_metrics_epoch_{epoch + 1}"
             )
             dev_artifact = wandb.Artifact(
                 name=dev_artifact_name, type="metrics_detailed"
@@ -518,12 +500,11 @@ def train(cfg: DictConfig) -> Optional[float]:
             dev_artifact.add_file(str(dev_detailed_metrics_path))
             wandb.log_artifact(dev_artifact)
 
-        for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
+        for k, v_met in dev_summary_metrics.items():
             wandb_log_data_epoch[f"dev/{k}"] = v_met
 
         if cfg.training.get("eval_on_train_epoch_end", True):
             log.info(f"Running evaluation on training set for epoch {epoch + 1}...")
-            # <<< MERGED CHANGE 2 of 3 >>>
             train_eval_metrics_full = evaluate_probe(
                 probe_model,
                 train_loader_for_eval,
@@ -575,7 +556,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 train_eval_artifact_name = (
                     f"{wandb.run.name}-train_metrics_epoch_{epoch + 1}"
                     if wandb.run
-                    else f"{cfg.logging.experiment_name}-train_metrics_epoch_{epoch + 1}"
+                    else f"{cfg.experiment_name}-train_metrics_epoch_{epoch + 1}"
                 )
                 train_eval_artifact = wandb.Artifact(
                     name=train_eval_artifact_name, type="metrics_detailed"
@@ -583,10 +564,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 train_eval_artifact.add_file(str(train_detailed_metrics_path))
                 wandb.log_artifact(train_eval_artifact)
 
-            for (
-                k,
-                v_met,
-            ) in train_eval_summary_metrics.items():  # Log summary scalars to W&B
+            for k, v_met in train_eval_summary_metrics.items():
                 wandb_log_data_epoch[f"train_eval/{k}"] = v_met
         else:
             log.info(
@@ -610,7 +588,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         epoch_train_losses.append(avg_train_loss)
         epoch_dev_losses.append(
             dev_summary_metrics.get("loss", float("nan"))
-        )  # Use .get for safety
+        )
         epoch_dev_primary_metrics.append(current_dev_metric_to_monitor)
 
         is_best_for_checkpoint = False
@@ -627,14 +605,11 @@ def train(cfg: DictConfig) -> Optional[float]:
         ):
             is_best_for_checkpoint = True
 
-        if (
-            is_best_for_checkpoint
-        ):  # Log only if it's truly a new best according to EarlyStopper's logic
+        if is_best_for_checkpoint:
             log.info(
                 f"New best {monitor_metric} for checkpointing: {current_dev_metric_to_monitor:.4f} (was {early_stopper.best_actual_metric if early_stopper.best_actual_metric is not None else 'N/A'})."
             )
 
-        # --- Modified Checkpointing Logic ---
         should_call_save_checkpoint_func = False
         if is_best_for_checkpoint:
             should_call_save_checkpoint_func = True
@@ -642,7 +617,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         save_every_epoch = cfg.training.get("save_every_epoch_checkpoint", False)
         if save_every_epoch:
             should_call_save_checkpoint_func = True
-            if not is_best_for_checkpoint:  # Log only if not already logged as best
+            if not is_best_for_checkpoint:
                 log.info(
                     f"Saving checkpoint for epoch {epoch + 1} as per 'save_every_epoch_checkpoint' config."
                 )
@@ -653,9 +628,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         )
         if is_nth_epoch_for_periodic_save:
             should_call_save_checkpoint_func = True
-            if (
-                not is_best_for_checkpoint and not save_every_epoch
-            ):  # Log only if not already covered
+            if not is_best_for_checkpoint and not save_every_epoch:
                 log.info(
                     f"Saving checkpoint for epoch {epoch + 1} as per 'save_checkpoint_every_n_epochs={save_interval}' config."
                 )
@@ -674,7 +647,9 @@ def train(cfg: DictConfig) -> Optional[float]:
             log.debug(
                 f"Skipping non-best checkpoint for epoch {epoch + 1} as per configuration."
             )
-        # --- End Modified Checkpointing Logic ---
+
+        if lr_scheduler_standard:
+            lr_scheduler_standard.step(current_dev_metric_to_monitor)
 
         if lr_scheduler_custom:
             new_opt = lr_scheduler_custom.step(
@@ -716,7 +691,7 @@ def train(cfg: DictConfig) -> Optional[float]:
     best_checkpoint_path = output_dir / "checkpoints" / best_checkpoint_filename
 
     loaded_metric_val_for_summary = (
-        current_dev_metric_to_monitor  # Fallback to last epoch's metric
+        current_dev_metric_to_monitor
     )
     if best_checkpoint_path.exists():
         log.info(
@@ -730,7 +705,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         )
         final_metrics_summary["best_model_epoch_completed"] = loaded_epoch_completed - 1
         final_metrics_summary["best_model_metric_value_on_dev"] = loaded_metric_val
-        loaded_metric_val_for_summary = loaded_metric_val  # Use the actual best metric
+        loaded_metric_val_for_summary = loaded_metric_val
 
         if (
             cfg.logging.wandb.enable
@@ -740,7 +715,7 @@ def train(cfg: DictConfig) -> Optional[float]:
             model_artifact_name = (
                 f"{wandb.run.name}-best_model"
                 if wandb.run
-                else f"{cfg.logging.get('experiment_name', 'probe')}-best_model"
+                else f"{cfg.experiment_name}-best_model"
             )
             model_artifact = wandb.Artifact(
                 name=model_artifact_name,
@@ -786,7 +761,6 @@ def train(cfg: DictConfig) -> Optional[float]:
                 num_workers=cfg.runtime.get("num_workers", 0),
                 pin_memory=torch.cuda.is_available(),
             )
-            # <<< MERGED CHANGE 3 of 3 >>>
             test_metrics_full = evaluate_probe(
                 probe_model,
                 test_loader,
@@ -831,17 +805,17 @@ def train(cfg: DictConfig) -> Optional[float]:
                 for (
                     k,
                     v_met_test,
-                ) in test_summary_metrics.items():  # Ensure using test_summary_metrics
+                ) in test_summary_metrics.items():
                     wandb.summary[f"final_test/{k}"] = v_met_test
                     wandb_test_log_payload[f"final_test/{k}"] = v_met_test
-                if wandb_test_log_payload:  # Only log if there are metrics
+                if wandb_test_log_payload:
                     wandb.log(wandb_test_log_payload, step=last_epoch_completed)
 
                 if cfg.logging.wandb.get("log_test_detailed_artifact", False):
                     test_artifact_name = (
                         f"{wandb.run.name}-test_metrics_final"
                         if wandb.run
-                        else f"{cfg.logging.get('experiment_name', 'probe')}-test_metrics_final"
+                        else f"{cfg.experiment_name}-test_metrics_final"
                     )
                     test_artifact = wandb.Artifact(
                         name=test_artifact_name, type="metrics_detailed"
@@ -871,7 +845,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         summary_artifact_name = (
             f"{wandb.run.name}-summary_metrics"
             if wandb.run
-            else f"{cfg.logging.get('experiment_name', 'probe')}-summary_metrics"
+            else f"{cfg.experiment_name}-summary_metrics"
         )
         summary_artifact = wandb.Artifact(
             name=summary_artifact_name, type="metrics_summary"
