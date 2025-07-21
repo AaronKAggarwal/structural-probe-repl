@@ -1,0 +1,15 @@
+name: modern_baselines/ud_ewt/bert-base-cased/dist/L7
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/bert-base-cased/L7
+  - /probe: distance
+  - /probe_rank@probe: "768"
+  - /training: adam_modern_scheduler
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: modern_ud_ewt_dist_L7
+
+logging:
+  experiment_name: "Modern_UDEWT_BERT_L7_Dist_R768"

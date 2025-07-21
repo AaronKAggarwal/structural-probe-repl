@@ -7,6 +7,7 @@ from typing import Any, Iterator, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # from omegaconf import DictConfig # Using Any for cfg types for simplicity in this module
 
@@ -230,6 +231,30 @@ class EarlyStopper:
     def best_score_actual(self) -> Optional[float]:
         """Returns the best actual metric value seen so far (not transformed)."""
         return self.best_actual_metric
+
+
+def get_standard_scheduler(
+    optimizer: optim.Optimizer, cfg_scheduler: Optional[Any]
+) -> Optional[ReduceLROnPlateau]:
+    """Instantiates a standard PyTorch LR scheduler based on Hydra config."""
+    if not cfg_scheduler or not cfg_scheduler.get("enable"):
+        return None
+
+    name = cfg_scheduler.get("name")
+    logger.info(f"Initializing standard LR scheduler: {name}")
+
+    if name == "ReduceLROnPlateau":
+        # Ensure metric for mode is correctly identified from the main training config
+        # This scheduler's mode depends on the early stopping metric's mode
+        return ReduceLROnPlateau(
+            optimizer,
+            mode=cfg_scheduler.get("mode", "min"),
+            factor=cfg_scheduler.get("factor", 0.1),
+            patience=cfg_scheduler.get("patience", 10),
+            verbose=True,
+        )
+    else:
+        raise ValueError(f"Unsupported standard scheduler name: {name}")
 
 
 def save_checkpoint(

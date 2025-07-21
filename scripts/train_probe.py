@@ -49,6 +49,7 @@ from torch_probe.train_utils import (
     EarlyStopper,
     LRSchedulerWithOptimizerReset,
     get_optimizer,
+    get_standard_scheduler,
     load_checkpoint,
     save_checkpoint,
 )
@@ -334,7 +335,9 @@ def train(cfg: DictConfig) -> Optional[float]:
         delta=cfg.training.early_stopping_delta,
     )
     lr_scheduler_custom = None
-    if cfg.training.lr_scheduler_with_reset.get("enable", False):
+    lr_scheduler_standard = None  # Initialize to None
+
+    if cfg.training.get("lr_scheduler_with_reset", {}).get("enable", False):
         lr_scheduler_custom = LRSchedulerWithOptimizerReset(
             optimizer_cfg=cfg.training.optimizer,
             lr_decay_factor=cfg.training.lr_scheduler_with_reset.lr_decay_factor,
@@ -346,7 +349,14 @@ def train(cfg: DictConfig) -> Optional[float]:
         )
         log.info("H&M-style LR decay with optimizer reset is ENABLED.")
     else:
-        log.info("H&M-style LR decay with optimizer reset is DISABLED.")
+        # Check for a standard scheduler if the custom one is disabled
+        lr_scheduler_standard = get_standard_scheduler(
+            optimizer, cfg.training.get("scheduler")
+        )
+        if lr_scheduler_standard:
+            log.info("Standard PyTorch LR scheduler is ENABLED.")
+        else:
+            log.info("No LR scheduler is active; using fixed learning rate.")
 
     log.info(
         f"Model, loss, optimizer, schedulers initialized. Monitoring '{monitor_metric}' in '{monitor_mode}' mode."
@@ -605,6 +615,10 @@ def train(cfg: DictConfig) -> Optional[float]:
             effective_monitor_mode = "min"
         else:
             effective_monitor_mode = monitor_mode
+
+        if lr_scheduler_standard:
+            # ReduceLROnPlateau steps on a validation metric
+            lr_scheduler_standard.step(current_dev_metric_to_monitor)
 
         epochs_list.append(epoch + 1)
         epoch_train_losses.append(avg_train_loss)

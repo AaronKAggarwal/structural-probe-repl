@@ -1,0 +1,18 @@
+name: modern_baselines/ud_ewt/elmo/depth/L0
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/elmo/L0
+  - /probe: depth
+  - /probe_rank@probe: "128"
+  - /training: adam_modern_scheduler
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: modern_ud_ewt_depth_L0
+
+evaluation:
+  metrics: ["spearmanr_hm", "root_acc"] # Override default metrics for depth probe
+
+logging:
+  experiment_name: "Modern_UDEWT_ELMo_L0_Depth_R128"

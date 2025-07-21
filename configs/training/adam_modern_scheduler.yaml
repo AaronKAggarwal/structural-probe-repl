@@ -1,0 +1,35 @@
+# configs/training/adam_modern_scheduler.yaml
+#
+# A modernized training regimen based closely on the Hewitt & Manning (2019) approach.
+# It replaces the custom optimizer-reset scheduler with a standard PyTorch ReduceLROnPlateau
+# scheduler and introduces a small delta for early stopping to improve robustness.
+#
+# Like the H&M replication, it monitors DEVELOPMENT LOSS for both LR decay and early stopping.
+
+# Inherit base Adam settings (initial LR, etc.) from the default `adam.yaml`
+defaults:
+  - adam
+
+# --- Scheduler Configuration ---
+# Use a standard PyTorch scheduler instead of the H&M custom one.
+lr_scheduler_with_reset:
+  enable: false
+
+scheduler:
+  enable: true
+  name: "ReduceLROnPlateau"
+  mode: "min"           # 'min' because we are monitoring 'loss'
+  factor: 0.1           # Reduce LR by a factor of 10 when the metric plateaus
+  patience: 1           # Match H&M's aggressive patience of 1 for LR decay
+
+# --- Early Stopping Configuration ---
+# Monitor development loss, just like H&M, but add a small delta to prevent
+# stopping due to insignificant noise.
+early_stopping_metric: "loss"
+early_stopping_delta: 0.0001
+patience: 10 # Stop training after 10 epochs of no significant improvement in dev loss
+
+# --- Other Training Parameters ---
+# Keep batch size and max epochs consistent with the H&M replication setup.
+batch_size: 20
+epochs: 40

@@ -1,0 +1,15 @@
+name: modern_baselines/ud_ewt/elmo/dist/L2
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/elmo/L2
+  - /probe: distance
+  - /probe_rank@probe: "128"
+  - /training: adam_modern_scheduler
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: modern_ud_ewt_dist_L2
+
+logging:
+  experiment_name: "Modern_UDEWT_ELMo_L2_Dist_R128"

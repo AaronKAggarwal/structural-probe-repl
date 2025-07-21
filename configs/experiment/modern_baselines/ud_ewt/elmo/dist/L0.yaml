@@ -1,0 +1,26 @@
+# configs/experiment/modern_baselines/ud_ewt/elmo/dist/L0.yaml
+
+# CHANGE 1: Updated name to reflect new location and methodology
+name: modern_baselines/ud_ewt/elmo/dist/L0
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/elmo/L0
+  - /probe: distance
+  - /probe_rank@probe: "128" # Common ELMo rank
+  
+  # CHANGE 2: Point to the new modern training regimen
+  - /training: adam_modern_scheduler
+  
+  # CHANGE 3: Point to the modern evaluation config
+  - /evaluation: default 
+  
+  - /runtime: mps 
+
+  # CHANGE 4 (Optional but recommended): Point to a new logging config
+  - /logging: ud_ewt_elmo_dist_L0_r128
+
+logging:
+  # CHANGE 4: Update the human-readable experiment name
+  experiment_name: "Modern_UDEWT_ELMo_L0_Dist_R128"

@@ -1,0 +1,2 @@
+wandb:
+  tags: ["modern_baseline", "ud_ewt", "elmo", "layer0", "depth", "r${probe.rank}"]

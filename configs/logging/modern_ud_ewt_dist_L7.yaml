@@ -1,0 +1,2 @@
+wandb:
+  tags: ["modern_baseline", "ud_ewt", "bert-base", "layer7", "distance", "r${probe.rank}"]
