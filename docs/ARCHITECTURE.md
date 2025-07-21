@@ -18,17 +18,18 @@ This document explains the layout of the `structural-probe-repl` project, coveri
 This section details the structure of the current project, which uses a modern PyTorch re-implementation for all new experiments.
 
 *   **`configs/`**: Hydra configuration files for the modern probing framework.
-    *   `config.yaml`: Main default configuration.
-    *   `config_extract.yaml`: Main configuration for `scripts/extract_embeddings.py`.
-    *   `dataset/`: Configs defining datasets. Now includes both `ptb_sd_official.yaml` (for H&M replication) and **`ud_english_ewt_full.yaml`** for the project's primary experiments.
-    *   `embeddings/`: Configs for pre-computed embeddings. Includes configs for both PTB-based HDF5s and UD-based HDF5s.
-    *   `experiment/`: Composable experiment configurations that define a complete experiment by pointing to other config groups. Each file must have a top-level `name` key.
-    *   `probe/`: Configs for different probe types (e.g., `distance.yaml`, `depth.yaml`).
-    *   `probe_rank/`: Defines discrete choices for probe rank (e.g., `128.yaml`), which are merged into the main probe config at runtime.
+    *   `config.yaml`: Main default configuration for **training** experiments.
+    *   `config_extract.yaml`: Main default configuration for **embedding extraction** jobs.
+    *   `job/`: Defines the type of task to run (e.g., `train_probe`, `extract_embeddings`).
+    *   `model/`: Defines specific models to use, primarily their Hugging Face identifier (e.g., `bert-base-cased.yaml`).
+    *   `dataset/`: Configs defining datasets (e.g., `ptb_sd/ptb_sd_official.yaml`).
+    *   `embeddings/`: Configs for pre-computed embeddings, pointing to HDF5 files.
+    *   `experiment/`: Composable configurations that combine components from other groups to define a complete experiment. Each file must have a top-level `name` key.
+    *   `probe/`: Configs for different probe types (e.g., `distance.yaml`).
+    *   `probe_rank/`: Defines discrete choices for probe rank (e.g., `128.yaml`), which are merged into the `probe` config at runtime.
     *   `training/`: Configs for training parameters (e.g., `training_hm_replication.yaml`).
     *   `evaluation/`: Configs for evaluation settings (e.g., `eval_hm_metrics.yaml`).
     *   `logging/`: Contains specific logging configurations (e.g., for W&B tags) that can be swapped out per experiment.
-    *   `extraction/`: Dedicated, single-use configs for large embedding extraction jobs (e.g., **`bert_base_cased_ud_ewt_all_layers.yaml`**).
 
 *   **`data/`**: (Gitignored by default)
     *   Location for storing primary datasets like the **full Universal Dependencies (UD) treebanks** and the Penn Treebank (PTB).
@@ -54,12 +55,16 @@ This section details the structure of the current project, which uses a modern P
 
 *   **`scripts/`**: Executable Python and shell scripts for the project.
     *   **Legacy Support:**
-        *   `run_legacy_probe.sh`: Wrapper to run H&M's `run_experiment.py` or `run_demo.py` inside the legacy container.
+        *   `run_legacy_probe.sh`: Wrapper to run H&M's legacy code inside the container.
     *   **Modern Probe Pipeline:**
-        *   `extract_embeddings.py`: Main Hydra-configurable script for extracting word-aligned hidden state embeddings from Hugging Face Transformer models for any given CoNLL-X/U dataset.
-        *   `train_probe.py`: Main Hydra-configurable script for training and evaluating modern structural probes.
-    *   **`scripts/smoke_tests/`**: A suite of modular smoke test scripts for rapidly verifying different sets of experiment configurations (e.g., `02_test_hm_replication.sh`).
-    *   `test_all_configs.sh`: A master script that executes all individual test suites within the `scripts/smoke_tests/` directory.
+        *   `extract_embeddings.py`: A Hydra-configurable script for extracting embeddings. It is driven by `config_extract.yaml` and composes `dataset` and `model` configs specified on the command line.
+        *   `train_probe.py`: The main Hydra-configurable script for training and evaluating probes, typically launched via an `experiment` config.
+    *   **Data Generation & Management:**
+        *   `generate_all_canonical_embeddings.sh`: Master script to generate all required HDF5 files for the project.
+        *   `convert_conllu_to_raw_generic.py`: Utility to create raw text files for ELMo.
+    *   **Testing:**
+        *   `scripts/smoke_tests/`: A suite of modular smoke test scripts for rapidly verifying different sets of experiment configurations.
+        *   `test_all_configs.sh`: A master script that executes all individual test suites within the `scripts/smoke_tests/` directory.
 
 *   **`src/`**: Source code for the project.
     *   `legacy/structural_probe/`: Contains the vendored original Hewitt & Manning codebase.

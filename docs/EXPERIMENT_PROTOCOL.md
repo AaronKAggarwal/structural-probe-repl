@@ -1,6 +1,6 @@
 # Experiment Protocol: Modern Structural Probe
 
-Last updated: 2025-07-16
+Last updated: 2025-07-21
 
 This document outlines the standard procedures for configuring, running, and managing experiments with the modern structural probe implemented in `scripts/train_probe.py`, and the prerequisite embedding extraction using `scripts/extract_embeddings.py`. The framework uses [Hydra](https://hydra.cc/) for flexible and powerful configuration management.
 
@@ -57,12 +57,27 @@ All experiments are controlled via YAML files in `configs/` managed by Hydra.
 
 ### 4.1 For Hugging Face Transformer Models (e.g., BERT, Llama)
 
-1.  **Prepare a Config:** Create a new YAML file in `configs/extraction/`, for example `configs/extraction/my_model_on_ud_ewt.yaml`, specifying the model, dataset paths, and output path. (See `configs/extraction/bert_base_cased_ud_ewt_all_layers.yaml` for an example).
-2.  **Execute Script:** Run `extract_embeddings.py` by pointing it to your new config.
+The modern `extract_embeddings.py` script now uses the same powerful Hydra configuration system as the training script. Instead of a separate config, an extraction job is defined by composing `dataset` and `model` configs from the command line.
+
+1.  **Ensure `model` and `dataset` configs exist.** You should have YAML files defining your target model (e.g., `configs/model/bert-base-cased.yaml`) and your target dataset (e.g., `configs/dataset/ptb_sd/ptb_sd_official.yaml`).
+
+2.  **Execute the Script:** Run `extract_embeddings.py` by specifying the `dataset` and `model` you want to use. You can also override job-specific parameters like `layers_to_extract`.
+
     ```bash
-    poetry run python scripts/extract_embeddings.py --config-name=extraction/my_model_on_ud_ewt.yaml
+    # Example: Extracting all layers for BERT-base on the PTB-SD dataset
+    poetry run python scripts/extract_embeddings.py \
+      dataset=ptb_sd/ptb_sd_official \
+      model=bert-base-cased \
+      job.layers_to_extract='all'
+
+    # Example: Extracting specific layers for BERT-base on the UD EWT dataset
+    poetry run python scripts/extract_embeddings.py \
+      dataset=ud_ewt/ud_english_ewt_full \
+      model=bert-base-cased \
+      job.layers_to_extract='[0, 6, 11]'
     ```
-3.  **Outputs:** HDF5 files will be saved in the directory specified by `output_hdf5.base_output_path`.
+
+3.  **Outputs:** HDF5 files will be saved in the directory specified by `job.output_hdf5_path` in the `configs/job/extract_embeddings.yaml` file, which uses variables from your selected configs to create a standardized path (e.g., `data_staging/embeddings/ptb_sd_official_splits/bert-base-cased/...`).
 
 ### 4.2 For Legacy ELMo
 
@@ -80,6 +95,12 @@ All experiments are controlled via YAML files in `configs/` managed by Hydra.
       data_staging/ud_ewt_official_processed/raw_text/en_ewt-ud-train.txt \
       data_staging/ud_ewt_official_processed/elmo_hdf5_layers/en_ewt-ud-train.elmo-layers.hdf5
     ```
+### 4.3 Master Generation Script
+
+To simplify the generation of all canonical embeddings required for the project, you can use the master script which orchestrates all the commands above.
+```bash
+./scripts/generate_all_canonical_embeddings.sh
+```
 
 ## 5. Stage 2: Running Probe Training & Evaluation
 
