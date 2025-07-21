@@ -15,3 +15,6 @@ lr_scheduler_with_reset:
   lr_decay_factor: 0.1
   lr_decay_patience: 1 # This was key for H&M style: decay if no improvement in 1 epoch
   min_lr: 1.0e-6
+
+  scheduler:
+  enable: false

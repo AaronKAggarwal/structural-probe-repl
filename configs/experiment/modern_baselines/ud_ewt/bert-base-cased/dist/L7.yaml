@@ -1,4 +1,4 @@
-# configs/experiment/ud_baselines/bert_base_L7_dist_udewt_probe.yaml
+# configs/experiment/modern_baselines/ud_ewt/bert-base-cased/dist/L7.yaml
 # This runs a distance probe on the top layer (L7) of BERT on the full UD EWT dataset.
 
 name: ud_ewt/bert-base-cased/dist/L7
@@ -9,8 +9,7 @@ defaults:
   - /embeddings: ud_ewt/bert-base-cased/L7
   - /probe: distance
   - /probe_rank@probe: "768"
-  - /training: adam # Re-using H&M's training schedule
-  - /training/adam_modern_scheduler
+  - /training: adam_modern_scheduler
   - /evaluation: default
   - /runtime: mps
   - /logging: ud_ewt_bert_L7_dist_r768

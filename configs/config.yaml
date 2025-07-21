@@ -1,28 +1,31 @@
+# configs/config.yaml
+# This is the main configuration file. It only defines the configuration GROUPS.
+# The actual choices for each group are delegated to the specific experiment file.
+
 defaults:
+  # These lines define the "slots" that MUST be filled by an experiment config.
+  # The '???' makes the choice mandatory.
   - job: train_probe
-  - dataset: ud_ewt/ud_english_ewt_full
-  - embeddings: ud_ewt/elmo/L1
+  - dataset: ???
+  - embeddings: ???
   - model: hf_base
-  - probe: distance
-  - probe_rank@probe: "128"
-  - training: adam
-  - training/schedule_hm
+  - probe: ???
+  - probe_rank@probe: ???
+  - training: ???
   - evaluation: default
   - runtime: mps
   - logging: wandb
-  - experiment: ???      # stub enables experiment=… overrides
+  - experiment: ???      # This is how we select which experiment to run.
   - _self_
 
+# This value is now defined in the experiment config and used here for the output dir.
 experiment_name: ${experiment.name}
 
 hydra:
   run:
-    # Single-run output directory is unchanged.
     dir: outputs/${experiment.name}
   sweep:
-    # Multi-run parent directory is now named with a timestamp. This is safe.
     dir: multirun/${now:%Y-%m-%d_%H-%M-%S}
-    # Each job's subdirectory is now descriptively named after its experiment.
     subdir: ${experiment.name}
   job:
     chdir: true

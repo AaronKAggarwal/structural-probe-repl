@@ -1,4 +1,12 @@
-metrics: [spearmanr_hm, uuas]
+# configs/evaluation/default.yaml
+# This is the default evaluation config.
+# It is used for all experiments that don't have their own evaluation config.
+
+# A more robust version using standard block-style YAML
+
+metrics: 
+  - spearmanr_hm
+  - uuas
 filter_by_non_punct_len: true
 punctuation_strategy: upos
 spearman_min_len: 5

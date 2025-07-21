@@ -1,4 +1,4 @@
-# configs/experiment/ud_ewt/elmo/depth/L0.yaml
+# configs/experiment/modern_baselines/ud_ewt/elmo/depth/L0.yaml
 
 name: ud_ewt/elmo/depth/L0
 
@@ -8,8 +8,8 @@ defaults:
   - /embeddings: ud_ewt/elmo/L0
   - /probe: depth
   - /probe_rank@probe: "128"
-  - /training: adam
-  - /training/adam_modern_scheduler
+  - /training: adam_modern_scheduler
+  - /evaluation: default
   - /runtime: mps
   - /logging: ud_ewt_elmo_depth_L0_r128
 
