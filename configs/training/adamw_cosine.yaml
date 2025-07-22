@@ -1,0 +1,22 @@
+# configs/training/adamw_cosine.yaml
+
+# Inherit base Adam settings (initial LR, batch size, etc.)
+defaults:
+  - adam
+
+# --- Optimizer Configuration ---
+optimizer:
+  name: "AdamW"          # Use AdamW
+  lr: 0.001              # This will be the max_lr for the scheduler
+  weight_decay: 0.0      # Keep at 0 based on your analysis, but easy to tune later
+
+lr_scheduler_with_reset:
+  enable: false
+
+# --- Scheduler Configuration ---
+# Replace ReduceLROnPlateau with CosineAnnealingLR
+scheduler:
+  enable: true
+  name: "CosineAnnealingLR"
+  T_max: ${training.epochs}  # The number of epochs for one half-cycle
+  eta_min: 1.0e-6             # The minimum learning rate

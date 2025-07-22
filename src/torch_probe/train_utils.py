@@ -253,6 +253,12 @@ def get_standard_scheduler(
             patience=cfg_scheduler.get("patience", 10),
             verbose=True,
         )
+    elif name == "CosineAnnealingLR":
+        return optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=cfg_scheduler.T_max,
+            eta_min=cfg_scheduler.get("eta_min", 0),
+        )
     else:
         raise ValueError(f"Unsupported standard scheduler name: {name}")
 

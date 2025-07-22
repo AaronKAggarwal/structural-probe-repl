@@ -6,7 +6,6 @@ defaults:
   - probe: distance
   - probe_rank@probe: "128"
   - training: adam
-  - training/schedule_hm
   - evaluation: default
   - runtime: mps
   - logging: wandb

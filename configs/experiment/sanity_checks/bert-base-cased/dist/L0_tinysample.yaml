@@ -12,6 +12,7 @@ defaults:
   - /training: smoke_test
   - /evaluation: default
   - /runtime: mps
+  - /logging: sanity_check
 
 logging:
   wandb:

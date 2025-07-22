@@ -1,0 +1,5 @@
+# configs/logging/sanity_check.yaml
+wandb:
+  enable: false
+enable_plots: false
+experiment_name: "SANITY_CHECK"
