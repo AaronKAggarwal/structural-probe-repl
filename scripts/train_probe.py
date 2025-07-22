@@ -617,9 +617,13 @@ def train(cfg: DictConfig) -> Optional[float]:
             effective_monitor_mode = monitor_mode
 
         if lr_scheduler_standard:
+            old_lr = optimizer.param_groups[0]["lr"]
             # ReduceLROnPlateau steps on a validation metric
             lr_scheduler_standard.step(current_dev_metric_to_monitor)
-
+            new_lr = optimizer.param_groups[0]['lr']
+            if new_lr < old_lr:
+                log.info(f"Standard LR Scheduler: Learning rate reduced from {old_lr:.7e} to {new_lr:.7e}")
+            
         epochs_list.append(epoch + 1)
         epoch_train_losses.append(avg_train_loss)
         epoch_dev_losses.append(
