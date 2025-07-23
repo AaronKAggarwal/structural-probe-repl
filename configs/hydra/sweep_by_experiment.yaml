@@ -1,0 +1,4 @@
+# @package hydra
+sweep:
+  dir: multirun          # constant
+  subdir: ${experiment.name}/job_${hydra.job.num}

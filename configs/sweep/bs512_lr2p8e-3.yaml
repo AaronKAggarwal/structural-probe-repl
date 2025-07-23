@@ -1,0 +1,8 @@
+# @package _global_
+training:
+  batch_size: 512
+  optimizer:
+    lr: 0.0028
+experiment:
+  training:
+    batch_size: 512
