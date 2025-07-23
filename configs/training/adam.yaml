@@ -13,6 +13,7 @@ save_checkpoint_every_n_epochs: -1
 eval_on_train_epoch_end: true
 limit_eval_batches: -1
 limit_train_batches: -1
+eval_every_n_epochs: 1
 
 scheduler:
   enable: false

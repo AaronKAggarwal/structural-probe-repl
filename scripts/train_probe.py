@@ -449,97 +449,36 @@ def train(cfg: DictConfig) -> Optional[float]:
         wandb_log_data_epoch["train/epoch_loss"] = avg_train_loss
         wandb_log_data_epoch["trainer/learning_rate"] = optimizer.param_groups[0]["lr"]
 
-        log.info(f"Running validation for epoch {epoch + 1}...")
-        # <<< MERGED CHANGE 1 of 3 >>>
-        limit_batches = cfg.training.get("limit_eval_batches", -1)
-        if limit_batches > 0:
-            log.warning(
-                f"!!! Limiting validation to {limit_batches} batches for this run !!!"
-            )
-            dev_loader_for_eval = [
-                batch for i, batch in enumerate(dev_loader) if i < limit_batches
-            ]
-            train_loader_for_eval = [
-                batch for i, batch in enumerate(train_loader) if i < limit_batches
-            ]
-        else:
-            dev_loader_for_eval = dev_loader
-            train_loader_for_eval = train_loader
+        # --- MODIFICATION: Add the conditional evaluation block ---
 
-        dev_metrics_full = evaluate_probe(
-            probe_model,
-            dev_loader_for_eval,
-            loss_fn,
-            device,
-            cfg.probe.type,
-            filter_by_non_punct_len=cfg.evaluation.get("filter_by_non_punct_len", True),
-            punctuation_strategy=cfg.evaluation.get("punctuation_strategy", "upos"),
-            spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
-            spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
-        )
+        # Determine if we should run evaluation on this epoch
+        is_eval_epoch = (epoch + 1) % cfg.training.get("eval_every_n_epochs", 1) == 0
+        is_last_epoch = (epoch + 1) == cfg.training.epochs
 
-        # Filter for summary metrics (scalar values) for concise logging
-        dev_summary_metrics = {}
-        dev_detailed_metrics_data = {}  # For detailed JSON saving
-        scalar_metric_keys_to_log = [
-            "loss",
-            "spearmanr_hm",
-            "uuas",
-            "root_acc",
-        ]  # Define expected scalar keys
+        if is_eval_epoch or is_last_epoch:
+            if not is_eval_epoch and is_last_epoch:
+                log.info(f"Forcing evaluation on the final epoch ({epoch + 1}).")
 
-        for k, v_met in dev_metrics_full.items():
-            if k in scalar_metric_keys_to_log:
-                if isinstance(v_met, (float, int, np.number)):
-                    dev_summary_metrics[k] = v_met
-            elif (
-                "_per_sentence" in k
-                or "_individual_scores_in_range" in k
-                or "_by_length_group" in k
-            ):
-                dev_detailed_metrics_data[k] = v_met
+            log.info(f"Running validation for epoch {epoch + 1}...")
+            # <<< MERGED CHANGE 1 of 3 >>>
+            limit_batches = cfg.training.get("limit_eval_batches", -1)
+            if limit_batches > 0:
+                log.warning(
+                    f"!!! Limiting validation to {limit_batches} batches for this run !!!"
+                )
+                dev_loader_for_eval = [
+                    batch for i, batch in enumerate(dev_loader) if i < limit_batches
+                ]
+                train_loader_for_eval = [
+                    batch for i, batch in enumerate(train_loader) if i < limit_batches
+                ]
+            else:
+                dev_loader_for_eval = dev_loader
+                train_loader_for_eval = train_loader
 
-        log_msg = f"Epoch {epoch + 1} Dev Metrics (Summary): "
-        for k in scalar_metric_keys_to_log:
-            if k in dev_summary_metrics:
-                v_met = dev_summary_metrics[k]
-                log_msg += f"{k}: {v_met:.4f} "
-        log.info(log_msg)
-
-        dev_detailed_metrics_path = (
-            output_dir / f"dev_detailed_metrics_epoch{epoch + 1}.json"
-        )
-        with open(dev_detailed_metrics_path, "w") as f:
-            json.dump(
-                dev_detailed_metrics_data, f, indent=2
-            )  # Save only detailed parts
-        log.info(f"Saved detailed dev metrics to {dev_detailed_metrics_path}")
-
-        if (
-            cfg.logging.wandb.enable
-            and wandb.run
-            and cfg.logging.wandb.get("log_dev_detailed_artifact", False)
-        ):
-            dev_artifact_name = (
-                f"{wandb.run.name}-dev_metrics_epoch_{epoch + 1}"
-                if wandb.run
-                else f"{cfg.logging.experiment_name}-dev_metrics_epoch_{epoch + 1}"
-            )
-            dev_artifact = wandb.Artifact(
-                name=dev_artifact_name, type="metrics_detailed"
-            )
-            dev_artifact.add_file(str(dev_detailed_metrics_path))
-            wandb.log_artifact(dev_artifact)
-
-        for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
-            wandb_log_data_epoch[f"dev/{k}"] = v_met
-
-        if cfg.training.get("eval_on_train_epoch_end", True):
-            log.info(f"Running evaluation on training set for epoch {epoch + 1}...")
-            # <<< MERGED CHANGE 2 of 3 >>>
-            train_eval_metrics_full = evaluate_probe(
+            dev_metrics_full = evaluate_probe(
                 probe_model,
-                train_loader_for_eval,
+                dev_loader_for_eval,
                 loss_fn,
                 device,
                 cfg.probe.type,
@@ -551,179 +490,270 @@ def train(cfg: DictConfig) -> Optional[float]:
                 spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
             )
 
-            train_eval_summary_metrics = {}
-            train_eval_detailed_metrics_data = {}
-            for k, v_met in train_eval_metrics_full.items():
+            # Filter for summary metrics (scalar values) for concise logging
+            dev_summary_metrics = {}
+            dev_detailed_metrics_data = {}  # For detailed JSON saving
+            scalar_metric_keys_to_log = [
+                "loss",
+                "spearmanr_hm",
+                "uuas",
+                "root_acc",
+            ]  # Define expected scalar keys
+
+            for k, v_met in dev_metrics_full.items():
                 if k in scalar_metric_keys_to_log:
                     if isinstance(v_met, (float, int, np.number)):
-                        train_eval_summary_metrics[k] = v_met
+                        dev_summary_metrics[k] = v_met
                 elif (
                     "_per_sentence" in k
                     or "_individual_scores_in_range" in k
                     or "_by_length_group" in k
                 ):
-                    train_eval_detailed_metrics_data[k] = v_met
+                    dev_detailed_metrics_data[k] = v_met
 
-            log_msg_train_eval = f"Epoch {epoch + 1} Train Eval Metrics (Summary): "
+            log_msg = f"Epoch {epoch + 1} Dev Metrics (Summary): "
             for k in scalar_metric_keys_to_log:
-                if k in train_eval_summary_metrics:
-                    v_met = train_eval_summary_metrics[k]
-                    log_msg_train_eval += f"{k}: {v_met:.4f} "
-            log.info(log_msg_train_eval)
+                if k in dev_summary_metrics:
+                    v_met = dev_summary_metrics[k]
+                    log_msg += f"{k}: {v_met:.4f} "
+            log.info(log_msg)
 
-            train_detailed_metrics_path = (
-                output_dir / f"train_detailed_metrics_epoch{epoch + 1}.json"
+            dev_detailed_metrics_path = (
+                output_dir / f"dev_detailed_metrics_epoch{epoch + 1}.json"
             )
-            with open(train_detailed_metrics_path, "w") as f:
-                json.dump(train_eval_detailed_metrics_data, f, indent=2)
-            log.info(
-                f"Saved detailed train set evaluation metrics to {train_detailed_metrics_path}"
-            )
+            with open(dev_detailed_metrics_path, "w") as f:
+                json.dump(
+                    dev_detailed_metrics_data, f, indent=2
+                )  # Save only detailed parts
+            log.info(f"Saved detailed dev metrics to {dev_detailed_metrics_path}")
 
             if (
                 cfg.logging.wandb.enable
                 and wandb.run
-                and cfg.logging.wandb.get("log_train_detailed_artifact", False)
+                and cfg.logging.wandb.get("log_dev_detailed_artifact", False)
             ):
-                train_eval_artifact_name = (
-                    f"{wandb.run.name}-train_metrics_epoch_{epoch + 1}"
+                dev_artifact_name = (
+                    f"{wandb.run.name}-dev_metrics_epoch_{epoch + 1}"
                     if wandb.run
-                    else f"{cfg.logging.experiment_name}-train_metrics_epoch_{epoch + 1}"
+                    else f"{cfg.logging.experiment_name}-dev_metrics_epoch_{epoch + 1}"
                 )
-                train_eval_artifact = wandb.Artifact(
-                    name=train_eval_artifact_name, type="metrics_detailed"
+                dev_artifact = wandb.Artifact(
+                    name=dev_artifact_name, type="metrics_detailed"
                 )
-                train_eval_artifact.add_file(str(train_detailed_metrics_path))
-                wandb.log_artifact(train_eval_artifact)
+                dev_artifact.add_file(str(dev_detailed_metrics_path))
+                wandb.log_artifact(dev_artifact)
 
-            for (
-                k,
-                v_met,
-            ) in train_eval_summary_metrics.items():  # Log summary scalars to W&B
-                wandb_log_data_epoch[f"train_eval/{k}"] = v_met
-        else:
-            log.info(
-                f"Skipping evaluation on training set for epoch {epoch + 1} as per config."
-            )
+            for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
+                wandb_log_data_epoch[f"dev/{k}"] = v_met
 
-        if cfg.logging.wandb.enable and wandb.run:
-            wandb.log(wandb_log_data_epoch, step=epoch + 1)
-
-        current_dev_metric_to_monitor = dev_summary_metrics.get(monitor_metric)
-        if current_dev_metric_to_monitor is None:
-            log.warning(
-                f"Monitor metric '{monitor_metric}' not found in dev_summary_metrics. Using 'loss' for decisions."
-            )
-            current_dev_metric_to_monitor = dev_summary_metrics["loss"]
-            effective_monitor_mode = "min"
-        else:
-            effective_monitor_mode = monitor_mode
-
-        if lr_scheduler_standard:
-            old_lr = optimizer.param_groups[0]["lr"]
-            # ReduceLROnPlateau steps on a validation metric
-            lr_scheduler_standard.step(current_dev_metric_to_monitor)
-            new_lr = optimizer.param_groups[0]['lr']
-            if new_lr < old_lr:
-                log.info(f"Standard LR Scheduler: Learning rate reduced from {old_lr:.7e} to {new_lr:.7e}")
-            
-        epochs_list.append(epoch + 1)
-        epoch_train_losses.append(avg_train_loss)
-        epoch_dev_losses.append(
-            dev_summary_metrics.get("loss", float("nan"))
-        )  # Use .get for safety
-        epoch_dev_primary_metrics.append(current_dev_metric_to_monitor)
-
-        is_best_for_checkpoint = False
-        if early_stopper.best_actual_metric is None:
-            is_best_for_checkpoint = True
-        elif (
-            effective_monitor_mode == "max"
-            and current_dev_metric_to_monitor
-            > early_stopper.best_actual_metric + early_stopper.delta
-        ) or (
-            effective_monitor_mode == "min"
-            and current_dev_metric_to_monitor
-            < early_stopper.best_actual_metric - early_stopper.delta
-        ):
-            is_best_for_checkpoint = True
-
-        if (
-            is_best_for_checkpoint
-        ):  # Log only if it's truly a new best according to EarlyStopper's logic
-            log.info(
-                f"New best {monitor_metric} for checkpointing: {current_dev_metric_to_monitor:.4f} (was {early_stopper.best_actual_metric if early_stopper.best_actual_metric is not None else 'N/A'})."
-            )
-
-        # --- Modified Checkpointing Logic ---
-        should_call_save_checkpoint_func = False
-        if is_best_for_checkpoint:
-            should_call_save_checkpoint_func = True
-
-        save_every_epoch = cfg.training.get("save_every_epoch_checkpoint", False)
-        if save_every_epoch:
-            should_call_save_checkpoint_func = True
-            if not is_best_for_checkpoint:  # Log only if not already logged as best
+            if cfg.training.get("eval_on_train_epoch_end", True):
                 log.info(
-                    f"Saving checkpoint for epoch {epoch + 1} as per 'save_every_epoch_checkpoint' config."
+                    f"Running evaluation on training set for epoch {epoch + 1}..."
+                )
+                # <<< MERGED CHANGE 2 of 3 >>>
+                train_eval_metrics_full = evaluate_probe(
+                    probe_model,
+                    train_loader_for_eval,
+                    loss_fn,
+                    device,
+                    cfg.probe.type,
+                    filter_by_non_punct_len=cfg.evaluation.get(
+                        "filter_by_non_punct_len", True
+                    ),
+                    punctuation_strategy=cfg.evaluation.get(
+                        "punctuation_strategy", "upos"
+                    ),
+                    spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
+                    spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
                 )
 
-        save_interval = cfg.training.get("save_checkpoint_every_n_epochs", -1)
-        is_nth_epoch_for_periodic_save = (
-            save_interval > 0 and (epoch + 1) % save_interval == 0
-        )
-        if is_nth_epoch_for_periodic_save:
-            should_call_save_checkpoint_func = True
-            if (
-                not is_best_for_checkpoint and not save_every_epoch
-            ):  # Log only if not already covered
+                train_eval_summary_metrics = {}
+                train_eval_detailed_metrics_data = {}
+                for k, v_met in train_eval_metrics_full.items():
+                    if k in scalar_metric_keys_to_log:
+                        if isinstance(v_met, (float, int, np.number)):
+                            train_eval_summary_metrics[k] = v_met
+                    elif (
+                        "_per_sentence" in k
+                        or "_individual_scores_in_range" in k
+                        or "_by_length_group" in k
+                    ):
+                        train_eval_detailed_metrics_data[k] = v_met
+
+                log_msg_train_eval = (
+                    f"Epoch {epoch + 1} Train Eval Metrics (Summary): "
+                )
+                for k in scalar_metric_keys_to_log:
+                    if k in train_eval_summary_metrics:
+                        v_met = train_eval_summary_metrics[k]
+                        log_msg_train_eval += f"{k}: {v_met:.4f} "
+                log.info(log_msg_train_eval)
+
+                train_detailed_metrics_path = (
+                    output_dir / f"train_detailed_metrics_epoch{epoch + 1}.json"
+                )
+                with open(train_detailed_metrics_path, "w") as f:
+                    json.dump(train_eval_detailed_metrics_data, f, indent=2)
                 log.info(
-                    f"Saving checkpoint for epoch {epoch + 1} as per 'save_checkpoint_every_n_epochs={save_interval}' config."
+                    f"Saved detailed train set evaluation metrics to {train_detailed_metrics_path}"
                 )
 
-        if should_call_save_checkpoint_func:
-            save_checkpoint(
-                model=probe_model,
-                optimizer=optimizer,
-                epoch=epoch + 1,
-                current_metric_value=current_dev_metric_to_monitor,
-                checkpoint_dir=output_dir / "checkpoints",
-                filename_prefix=f"{cfg.probe.type}_probe_rank{cfg.probe.rank}",
-                is_best=is_best_for_checkpoint,
-            )
-        elif not is_best_for_checkpoint:
-            log.debug(
-                f"Skipping non-best checkpoint for epoch {epoch + 1} as per configuration."
-            )
-        # --- End Modified Checkpointing Logic ---
-
-        if lr_scheduler_custom:
-            new_opt = lr_scheduler_custom.step(
-                current_dev_metric_to_monitor, probe_model.parameters()
-            )
-            if new_opt:
-                log.info(
-                    f"Optimizer has been reset by LRScheduler. Old LR: {optimizer.param_groups[0]['lr']:.2e}, New LR: {new_opt.param_groups[0]['lr']:.2e}"
-                )
-                optimizer = new_opt
-                if cfg.logging.wandb.enable and wandb.run:
-                    wandb.log(
-                        {
-                            "trainer/lr_decay_event": 1,
-                            "trainer/new_learning_rate": new_opt.param_groups[0]["lr"],
-                        },
-                        step=epoch + 1,
+                if (
+                    cfg.logging.wandb.enable
+                    and wandb.run
+                    and cfg.logging.wandb.get("log_train_detailed_artifact", False)
+                ):
+                    train_eval_artifact_name = (
+                        f"{wandb.run.name}-train_metrics_epoch_{epoch + 1}"
+                        if wandb.run
+                        else f"{cfg.logging.experiment_name}-train_metrics_epoch_{epoch + 1}"
                     )
-                early_stopper.reset()
+                    train_eval_artifact = wandb.Artifact(
+                        name=train_eval_artifact_name, type="metrics_detailed"
+                    )
+                    train_eval_artifact.add_file(str(train_detailed_metrics_path))
+                    wandb.log_artifact(train_eval_artifact)
+
+                for (
+                    k,
+                    v_met,
+                ) in train_eval_summary_metrics.items():  # Log summary scalars to W&B
+                    wandb_log_data_epoch[f"train_eval/{k}"] = v_met
+            else:
                 log.info(
-                    "EarlyStopper has been reset due to LR change by custom scheduler."
+                    f"Skipping evaluation on training set for epoch {epoch + 1} as per config."
                 )
 
-        if early_stopper(current_dev_metric_to_monitor):
-            log.info(
-                f"Early stopping for overall training triggered at epoch {epoch + 1}."
+            if cfg.logging.wandb.enable and wandb.run:
+                wandb.log(wandb_log_data_epoch, step=epoch + 1)
+
+            current_dev_metric_to_monitor = dev_summary_metrics.get(monitor_metric)
+            if current_dev_metric_to_monitor is None:
+                log.warning(
+                    f"Monitor metric '{monitor_metric}' not found in dev_summary_metrics. Using 'loss' for decisions."
+                )
+                current_dev_metric_to_monitor = dev_summary_metrics["loss"]
+                effective_monitor_mode = "min"
+            else:
+                effective_monitor_mode = monitor_mode
+
+            if lr_scheduler_standard:
+                old_lr = optimizer.param_groups[0]["lr"]
+                # ReduceLROnPlateau steps on a validation metric
+                lr_scheduler_standard.step(current_dev_metric_to_monitor)
+                new_lr = optimizer.param_groups[0]["lr"]
+                if new_lr < old_lr:
+                    log.info(
+                        f"Standard LR Scheduler: Learning rate reduced from {old_lr:.7e} to {new_lr:.7e}"
+                    )
+
+            epochs_list.append(epoch + 1)
+            epoch_train_losses.append(avg_train_loss)
+            epoch_dev_losses.append(
+                dev_summary_metrics.get("loss", float("nan"))
+            )  # Use .get for safety
+            epoch_dev_primary_metrics.append(current_dev_metric_to_monitor)
+
+            is_best_for_checkpoint = False
+            if early_stopper.best_actual_metric is None:
+                is_best_for_checkpoint = True
+            elif (
+                effective_monitor_mode == "max"
+                and current_dev_metric_to_monitor
+                > early_stopper.best_actual_metric + early_stopper.delta
+            ) or (
+                effective_monitor_mode == "min"
+                and current_dev_metric_to_monitor
+                < early_stopper.best_actual_metric - early_stopper.delta
+            ):
+                is_best_for_checkpoint = True
+
+            if (
+                is_best_for_checkpoint
+            ):  # Log only if it's truly a new best according to EarlyStopper's logic
+                log.info(
+                    f"New best {monitor_metric} for checkpointing: {current_dev_metric_to_monitor:.4f} (was {early_stopper.best_actual_metric if early_stopper.best_actual_metric is not None else 'N/A'})."
+                )
+
+            # --- Modified Checkpointing Logic ---
+            should_call_save_checkpoint_func = False
+            if is_best_for_checkpoint:
+                should_call_save_checkpoint_func = True
+
+            save_every_epoch = cfg.training.get("save_every_epoch_checkpoint", False)
+            if save_every_epoch:
+                should_call_save_checkpoint_func = True
+                if not is_best_for_checkpoint:  # Log only if not already logged as best
+                    log.info(
+                        f"Saving checkpoint for epoch {epoch + 1} as per 'save_every_epoch_checkpoint' config."
+                    )
+
+            save_interval = cfg.training.get("save_checkpoint_every_n_epochs", -1)
+            is_nth_epoch_for_periodic_save = (
+                save_interval > 0 and (epoch + 1) % save_interval == 0
             )
-            break
+            if is_nth_epoch_for_periodic_save:
+                should_call_save_checkpoint_func = True
+                if (
+                    not is_best_for_checkpoint and not save_every_epoch
+                ):  # Log only if not already covered
+                    log.info(
+                        f"Saving checkpoint for epoch {epoch + 1} as per 'save_checkpoint_every_n_epochs={save_interval}' config."
+                    )
+
+            if should_call_save_checkpoint_func:
+                save_checkpoint(
+                    model=probe_model,
+                    optimizer=optimizer,
+                    epoch=epoch + 1,
+                    current_metric_value=current_dev_metric_to_monitor,
+                    checkpoint_dir=output_dir / "checkpoints",
+                    filename_prefix=f"{cfg.probe.type}_probe_rank{cfg.probe.rank}",
+                    is_best=is_best_for_checkpoint,
+                )
+            elif not is_best_for_checkpoint:
+                log.debug(
+                    f"Skipping non-best checkpoint for epoch {epoch + 1} as per configuration."
+                )
+            # --- End Modified Checkpointing Logic ---
+
+            if lr_scheduler_custom:
+                new_opt = lr_scheduler_custom.step(
+                    current_dev_metric_to_monitor, probe_model.parameters()
+                )
+                if new_opt:
+                    log.info(
+                        f"Optimizer has been reset by LRScheduler. Old LR: {optimizer.param_groups[0]['lr']:.2e}, New LR: {new_opt.param_groups[0]['lr']:.2e}"
+                    )
+                    optimizer = new_opt
+                    if cfg.logging.wandb.enable and wandb.run:
+                        wandb.log(
+                            {
+                                "trainer/lr_decay_event": 1,
+                                "trainer/new_learning_rate": new_opt.param_groups[0][
+                                    "lr"
+                                ],
+                            },
+                            step=epoch + 1,
+                        )
+                    early_stopper.reset()
+                    log.info(
+                        "EarlyStopper has been reset due to LR change by custom scheduler."
+                    )
+
+            if early_stopper(current_dev_metric_to_monitor):
+                log.info(
+                    f"Early stopping for overall training triggered at epoch {epoch + 1}."
+                )
+                break
+        else:
+            # --- This is the new `else` block for non-evaluation epochs ---
+            log.info(
+                f"Skipping evaluation for epoch {epoch + 1} as per 'eval_every_n_epochs' setting."
+            )
+            if cfg.logging.wandb.enable and wandb.run:
+                # Still log the basic epoch metrics so W&B charts don't have gaps
+                wandb.log(wandb_log_data_epoch, step=epoch + 1)
 
     log.info("Training finished.")
     final_metrics_summary: Dict[str, Any] = {
