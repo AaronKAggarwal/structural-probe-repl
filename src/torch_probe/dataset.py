@@ -1,5 +1,5 @@
 # src/torch_probe/dataset.py
-from pathlib import Path  # Added for __main__ example path checking
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import h5py
@@ -7,13 +7,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm # Import tqdm
 
-# Assuming these are in src/torch_probe/utils/
-# Use the potentially renamed read_conll_file if you adopted that change
 from .utils.conllu_reader import SentenceData, read_conll_file
-from .utils.embedding_loader import (
-    load_embeddings_for_sentence,  # Now generalized for modern and legacy HDF5
-)
+from .utils.embedding_loader import load_embeddings_for_sentence
 from .utils.gold_labels import calculate_tree_depths, calculate_tree_distances
 
 
@@ -25,6 +22,7 @@ class ProbeDataset(Dataset):
         embedding_layer_index: int,
         probe_task_type: str,
         embedding_dim: Optional[int] = None,
+        preload: bool = True,  # <-- Add preload parameter
     ):
         super().__init__()
 
@@ -36,81 +34,79 @@ class ProbeDataset(Dataset):
         self.embedding_layer_index = embedding_layer_index
         self.probe_task_type = probe_task_type
         self.embedding_dim = embedding_dim
+        self.preload = preload # Store the preload choice
 
-        # 1. Parse CoNLL data (CoNLL-U or CoNLL-X)
-        # The read_conll_file function should now provide 'xpos_tags'
         self.parsed_sentences: List[SentenceData] = read_conll_file(conllu_filepath)
         if not self.parsed_sentences:
             raise ValueError(f"No sentences found or parsed from {conllu_filepath}")
 
-        # Verify that xpos_tags are present (essential for H&M alignment)
-        if self.parsed_sentences and "xpos_tags" not in self.parsed_sentences[0]:
+        if "xpos_tags" not in self.parsed_sentences[0]:
             raise ValueError(
-                f"Parsed sentence data from {conllu_filepath} is missing 'xpos_tags'. "
-                "Ensure conllu_reader.py extracts them."
+                f"Parsed sentence data from {conllu_filepath} is missing 'xpos_tags'."
             )
 
-        # 2. Open HDF5 file
-        try:
-            self.hdf5_file_object = h5py.File(hdf5_filepath, "r")
-        except Exception as e:
-            raise IOError(f"Could not open HDF5 file {hdf5_filepath}: {e}")
+        # Infer embedding dimension if not provided
+        if self.embedding_dim is None:
+            if len(self.parsed_sentences) > 0:
+                try:
+                    with h5py.File(self.hdf5_filepath, "r") as hf:
+                        first_sent_emb = load_embeddings_for_sentence(
+                            hf, "0", self.embedding_layer_index
+                        )
+                except Exception as e:
+                    raise IOError(f"Could not open HDF5 file {hdf5_filepath}: {e}")
 
-        # 3. Pre-calculate gold labels
-        self.gold_labels: List[np.ndarray] = []
+                if first_sent_emb is not None and first_sent_emb.ndim == 2:
+                    self.embedding_dim = first_sent_emb.shape[1]
+                else:
+                    raise ValueError(
+                        f"Could not infer embedding dimension from HDF5 file {hdf5_filepath}. Please provide embedding_dim."
+                    )
+            else:
+                raise ValueError("Cannot infer embedding dimension from empty dataset.")
+        
+        self.gold_labels: List[np.ndarray] = self._calculate_all_gold_labels()
+
+        # --- NEW: Pre-loading Logic ---
+        self.preloaded_data: Optional[List[Dict[str, Any]]] = None
+        if self.preload:
+            print(f"Pre-loading data from {Path(self.conllu_filepath).name} into RAM...")
+            self.preloaded_data = []
+            # Open the file once for the entire pre-loading process
+            with h5py.File(self.hdf5_filepath, "r") as hdf5_file_object:
+                for i in tqdm(range(len(self.parsed_sentences)), desc="Pre-loading"):
+                    self.preloaded_data.append(self._get_item_data(i, hdf5_file_object))
+            print("Pre-loading complete.")
+        # --- END NEW ---
+
+    def _calculate_all_gold_labels(self) -> List[np.ndarray]:
+        """Helper to compute all gold labels during initialization."""
+        labels = []
         for i, sent_data in enumerate(self.parsed_sentences):
             if "head_indices" not in sent_data:
                 raise ValueError(
-                    f"Sentence {i} from {conllu_filepath} is missing 'head_indices'."
+                    f"Sentence {i} from {self.conllu_filepath} is missing 'head_indices'."
                 )
-
             if self.probe_task_type == "distance":
                 distances = calculate_tree_distances(sent_data["head_indices"])
-                self.gold_labels.append(distances.astype(np.float32))
+                labels.append(distances.astype(np.float32))
             elif self.probe_task_type == "depth":
                 depths = calculate_tree_depths(sent_data["head_indices"])
-                self.gold_labels.append(np.array(depths, dtype=np.float32))
+                labels.append(np.array(depths, dtype=np.float32))
+        return labels
 
-        # Infer embedding dimension
-        if self.embedding_dim is None:
-            if len(self.parsed_sentences) > 0:
-                first_sent_emb = load_embeddings_for_sentence(
-                    self.hdf5_file_object, "0", self.embedding_layer_index
-                )
-                if first_sent_emb is not None and first_sent_emb.ndim == 2:
-                    self.embedding_dim = first_sent_emb.shape[1]
-                    # print(f"Inferred embedding dimension: {self.embedding_dim} from HDF5 file.") # Less verbose
-                else:
-                    raise ValueError(
-                        f"Could not infer embedding dimension from HDF5 file {hdf5_filepath} "
-                        f"for key '0'. Please provide embedding_dim."
-                    )
-            else:  # Should not happen if file parsing worked and raised error for no sentences
-                raise ValueError(
-                    "Cannot infer embedding dimension from empty dataset and no embedding_dim provided."
-                )
-
-    def __len__(self) -> int:
-        return len(self.parsed_sentences)
-
-    def __getitem__(self, idx: int) -> Dict[str, Any]:
-        if not (0 <= idx < len(self.parsed_sentences)):
-            raise IndexError(
-                f"Index {idx} out of bounds for dataset of length {len(self.parsed_sentences)}"
-            )
-
+    def _get_item_data(self, idx: int, hdf5_file_object: h5py.File) -> Dict[str, Any]:
+        """Core logic to retrieve a single item, assuming an open HDF5 file."""
         sentence_data = self.parsed_sentences[idx]
         sentence_key = str(idx)
 
         embeddings_np = load_embeddings_for_sentence(
-            self.hdf5_file_object, sentence_key, self.embedding_layer_index
+            hdf5_file_object, sentence_key, self.embedding_layer_index
         )
 
         if embeddings_np is None:
-            # This might indicate the HDF5 file is missing the key or is corrupted for this sentence
             raise RuntimeError(
-                f"Failed to load embeddings for sentence key '{sentence_key}' "
-                f"from {self.hdf5_filepath}. HDF5 key might be missing or data corrupted."
+                f"Failed to load embeddings for sentence key '{sentence_key}' from {self.hdf5_filepath}."
             )
 
         num_tokens_conll = len(sentence_data["tokens"])
@@ -124,14 +120,6 @@ class ProbeDataset(Dataset):
                 f"CoNLL Tokens: {' '.join(sentence_data['tokens'])}"
             )
 
-        # Ensure all required fields are present from conllu_reader
-        for field in ["tokens", "head_indices", "upos_tags", "xpos_tags"]:
-            if field not in sentence_data:
-                raise ValueError(
-                    f"Sentence data for index {idx} is missing '{field}'. "
-                    f"Check output of conllu_reader.py from {self.conllu_filepath}."
-                )
-
         embeddings_tensor = torch.from_numpy(embeddings_np).float()
         gold_labels_tensor = torch.from_numpy(self.gold_labels[idx]).float()
 
@@ -141,42 +129,42 @@ class ProbeDataset(Dataset):
             "tokens": sentence_data["tokens"],
             "head_indices": sentence_data["head_indices"],
             "upos_tags": sentence_data["upos_tags"],
-            "xpos_tags": sentence_data["xpos_tags"],  # <<< ADDED XPOS_TAGS
+            "xpos_tags": sentence_data["xpos_tags"],
             "length": num_tokens_conll,
         }
 
+    def __len__(self) -> int:
+        return len(self.parsed_sentences)
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        if not (0 <= idx < len(self.parsed_sentences)):
+            raise IndexError(
+                f"Index {idx} out of bounds for dataset of length {len(self.parsed_sentences)}"
+            )
+
+        if self.preloaded_data is not None:
+            return self.preloaded_data[idx]
+        else:
+            # On-the-fly loading (slower, but memory efficient)
+            with h5py.File(self.hdf5_filepath, "r") as hdf5_file_object:
+                return self._get_item_data(idx, hdf5_file_object)
+
+
+    # --- CHANGE: These methods are no longer essential for this loading mode but are kept for API consistency ---
     def close_hdf5(self):
-        """Closes the HDF5 file object if it's open."""
-        # Check if the attribute exists and if it's not None AND if it has a 'close' method (duck typing)
-        if (
-            hasattr(self, "hdf5_file_object")
-            and self.hdf5_file_object is not None
-            and hasattr(self.hdf5_file_object, "id")
-            and self.hdf5_file_object.id.valid
-        ):  # h5py specific way to check if file is open
-            try:
-                # print(f"DEBUG: Closing HDF5 file {self.hdf5_filepath} in close_hdf5()")
-                self.hdf5_file_object.close()
-            except Exception as e:
-                # Use logging if available, or print for standalone script
-                # log.warning(f"Warning: Error closing HDF5 file {self.hdf5_filepath} during explicit close: {e}")
-                print(
-                    f"Warning: Error closing HDF5 file {self.hdf5_filepath} during explicit close: {e}"
-                )
-        # else:
-        # print(f"DEBUG: HDF5 file {self.hdf5_filepath} already closed or not properly initialized.")
-        self.hdf5_file_object = (
-            None  # Set to None after closing to prevent re-closing issues
-        )
+        """This method is now a no-op for on-disk loading, as file handles
+        are managed within __getitem__. It remains for compatibility and
+        potential use in pre-loading subclasses."""
+        pass
 
     def __del__(self):
-        """Ensure HDF5 file is closed when Dataset object is garbage collected."""
-        # print(f"DEBUG: ProbeDataset.__del__ called for {self.conllu_filepath}")
-        self.close_hdf5()
+        """No persistent file handle to close."""
+        pass
+    # --- END CHANGE ---
 
 
 def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
-    if not batch:  # Handle empty batch case
+    if not batch:
         return {
             "embeddings_batch": torch.empty(0),
             "labels_batch": torch.empty(0),
@@ -184,7 +172,7 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
             "tokens_batch": [],
             "head_indices_batch": [],
             "upos_tags_batch": [],
-            "xpos_tags_batch": [],  # <<< ADDED XPOS_TAGS_BATCH
+            "xpos_tags_batch": [],
         }
 
     embeddings_list = [item["embeddings"] for item in batch]
@@ -214,7 +202,7 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     tokens_batch = [item["tokens"] for item in batch]
     head_indices_batch = [item["head_indices"] for item in batch]
     upos_tags_batch = [item["upos_tags"] for item in batch]
-    xpos_tags_batch = [item["xpos_tags"] for item in batch]  # <<< ADDED XPOS_TAGS_BATCH
+    xpos_tags_batch = [item["xpos_tags"] for item in batch]
 
     return {
         "embeddings_batch": padded_embeddings,
@@ -223,16 +211,11 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
         "tokens_batch": tokens_batch,
         "head_indices_batch": head_indices_batch,
         "upos_tags_batch": upos_tags_batch,
-        "xpos_tags_batch": xpos_tags_batch,  # <<< ADDED XPOS_TAGS_BATCH
+        "xpos_tags_batch": xpos_tags_batch,
     }
 
-
+# Main block remains the same for standalone testing
 if __name__ == "__main__":
-    # Note: This example will only work if read_conll_file in conllu_reader.py
-    # has been updated to return 'xpos_tags' in its SentenceData dict.
-    # Otherwise, the ProbeDataset __init__ will raise a ValueError.
-
-    # Use pathlib for path construction
     project_root = Path(__file__).resolve().parent.parent.parent
     conllu_train_path_str = str(
         project_root
@@ -247,10 +230,7 @@ if __name__ == "__main__":
         not Path(conllu_train_path_str).exists()
         or not Path(hdf5_train_path_str).exists()
     ):
-        print("Please ensure CoNLL sample files from whykay-01 fork are in:")
-        print(f"  CoNLL path: {Path(conllu_train_path_str).resolve()}")
-        print(f"  HDF5 path:  {Path(hdf5_train_path_str).resolve()}")
-        print("Skipping standalone ProbeDataset example.")
+        print("Please ensure sample files are available to run standalone test.")
     else:
         print("Attempting to load ELMo (layer 2) for distance task from sample data...")
         try:

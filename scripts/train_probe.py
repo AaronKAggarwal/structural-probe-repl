@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 import hydra
 import numpy as np
 import torch
+import torch.multiprocessing
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
@@ -262,6 +263,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         embedding_layer_index=cfg.embeddings.layer_index,
         probe_task_type=cfg.probe.type,
         embedding_dim=cfg.embeddings.get("dimension"),
+        preload=cfg.dataset.get("preload", True)
     )
     dev_dataset = ProbeDataset(
         conllu_filepath=str(dev_conllu_path),
@@ -269,6 +271,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         embedding_layer_index=cfg.embeddings.layer_index,
         probe_task_type=cfg.probe.type,
         embedding_dim=train_dataset.embedding_dim,
+        preload=cfg.dataset.get("preload", True)
     )
 
     actual_embedding_dim = train_dataset.embedding_dim
@@ -963,6 +966,7 @@ def train(cfg: DictConfig) -> Optional[float]:
 
 
 if __name__ == "__main__":
+    torch.multiprocessing.set_start_method("spawn", force=True)
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,

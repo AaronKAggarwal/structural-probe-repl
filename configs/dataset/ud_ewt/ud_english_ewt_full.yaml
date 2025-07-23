@@ -1,4 +1,5 @@
 name: ud_english_ewt_full
+preload: true
 paths:
   conllu_train: data/ud_english_ewt_official/en_ewt-ud-train.conllu
   conllu_dev:   data/ud_english_ewt_official/en_ewt-ud-dev.conllu

@@ -20,10 +20,7 @@ class DistanceProbe(nn.Module):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.probe_rank = probe_rank
-        # Using nn.Linear for the projection. B is the weight matrix of this layer.
-        # B has shape (probe_rank, embedding_dim)
         self.projection_layer = nn.Linear(embedding_dim, probe_rank, bias=False)
-        # Default initialization for nn.Linear is Kaiming uniform, which is reasonable.
 
     def forward(self, embeddings_batch: torch.Tensor) -> torch.Tensor:
         """
@@ -42,36 +39,26 @@ class DistanceProbe(nn.Module):
                 f"got {embeddings_batch.shape}"
             )
 
+        # --- MODIFICATION: Replaced forward pass with the faster alternative algorithm ---
         # Project embeddings: B h^T
-        # embeddings_batch shape: (B, S, E)
-        # self.projection_layer(embeddings_batch) output shape: (B, S, K) where K is probe_rank
-        projected_embeddings = self.projection_layer(
-            embeddings_batch
-        )  # p_h, shape (B, S, K)
+        # embeddings_batch shape: (B, S, E) -> projected_embeddings shape: (B, S, K)
+        projected_embeddings = self.projection_layer(embeddings_batch)
 
-        # Efficiently compute all pairwise squared L2 distances
-        # ||p_i - p_j||^2 = ||p_i||^2 - 2 <p_i, p_j> + ||p_j||^2
-        # Let p_h be of shape (B, S, K)
+        # Use the identity ||a-b||^2 = ||a||^2 - 2a^Tb + ||b||^2 to compute distances
+        # without creating a massive intermediate tensor.
 
-        # norms_sq = torch.sum(projected_embeddings.pow(2), dim=2, keepdim=True) # Shape: (B, S, 1)
-        # dot_products = torch.bmm(projected_embeddings, projected_embeddings.transpose(1, 2)) # Shape: (B, S, S)
+        # norms_sq shape: (B, S, 1)
+        norms_sq = torch.sum(projected_embeddings.pow(2), dim=2, keepdim=True)
 
-        # # pairwise_dist_sq = norms_sq.transpose(1,2) - 2 * dot_products + norms_sq # Broadcasting issues here
-        # # Need careful broadcasting for norms_sq for all pairs.
+        # dot_products shape: (B, S, S)
+        dot_products = torch.bmm(projected_embeddings, projected_embeddings.transpose(1, 2))
 
-        # Simpler way with broadcasting for difference:
-        p_h_expanded_i = projected_embeddings.unsqueeze(2)  # Shape: (B, S, 1, K)
-        p_h_expanded_j = projected_embeddings.unsqueeze(1)  # Shape: (B, 1, S, K)
-
-        # Difference vector for all pairs (p_i - p_j)
-        diff_vectors = (
-            p_h_expanded_i - p_h_expanded_j
-        )  # Shape: (B, S, S, K) via broadcasting
-
-        # Squared L2 norm of difference vectors
-        squared_distances = torch.sum(
-            diff_vectors.pow(2), dim=3
-        )  # Sum over K dimension. Shape: (B, S, S)
+        # Use broadcasting to get the pairwise squared distances.
+        # norms_sq.transpose(1,2) shape: (B, 1, S)
+        # norms_sq shape: (B, S, 1)
+        # The addition and subtraction broadcast correctly across the matrix.
+        squared_distances = norms_sq.transpose(1, 2) - 2 * dot_products + norms_sq
+        # --- END MODIFICATION ---
 
         return squared_distances
 
@@ -111,41 +98,34 @@ class DepthProbe(nn.Module):
                 f"got {embeddings_batch.shape}"
             )
 
-        # Project embeddings
         projected_embeddings = self.projection_layer(
             embeddings_batch
-        )  # p_h, shape (B, S, K)
+        )
 
-        # Squared L2 norm for each projected embedding
         squared_depths = torch.sum(
             projected_embeddings.pow(2), dim=2
-        )  # Sum over K dimension. Shape: (B, S)
+        )
 
         return squared_depths
 
 
+# __main__ block remains unchanged for standalone testing.
 if __name__ == "__main__":
-    # Example Usage (primarily for quick checks, real tests in pytest)
-    B, S, E, K = 2, 5, 10, 3  # Batch, SeqLen, EmbeddingDim, ProbeRank
-
-    # Test DistanceProbe
+    B, S, E, K = 2, 5, 10, 3
     print("--- Testing DistanceProbe ---")
     dist_probe = DistanceProbe(embedding_dim=E, probe_rank=K)
     print("Probe parameters:", list(dist_probe.parameters()))
     dummy_embeddings = torch.randn(B, S, E)
     pred_sq_dist = dist_probe(dummy_embeddings)
     print("Input shape:", dummy_embeddings.shape)
-    print(
-        "Predicted squared distances shape:", pred_sq_dist.shape
-    )  # Expected (B, S, S)
+    print("Predicted squared distances shape:", pred_sq_dist.shape)
     assert pred_sq_dist.shape == (B, S, S)
     print("Sample output (first sentence, first row):", pred_sq_dist[0, 0, :])
 
-    # Test DepthProbe
     print("\n--- Testing DepthProbe ---")
     depth_probe = DepthProbe(embedding_dim=E, probe_rank=K)
     pred_sq_depth = depth_probe(dummy_embeddings)
     print("Input shape:", dummy_embeddings.shape)
-    print("Predicted squared depths shape:", pred_sq_depth.shape)  # Expected (B, S)
+    print("Predicted squared depths shape:", pred_sq_depth.shape)
     assert pred_sq_depth.shape == (B, S)
     print("Sample output (first sentence):", pred_sq_depth[0, :])
