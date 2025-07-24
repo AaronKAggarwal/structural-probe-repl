@@ -48,6 +48,8 @@ def profile_training_step(
         
         with record_function("loss_computation"):
             loss = distance_l1_loss(predictions, dummy_gold_dists, dummy_lengths)
+
+        loss.backward()
         
         with record_function("backward_pass"):
             loss.backward()
