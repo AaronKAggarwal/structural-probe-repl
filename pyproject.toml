@@ -15,7 +15,7 @@ dependencies = [
     "torch==2.2.0",
     "numpy>=1.26.4,<2.0.0", 
     # Using PEP 440 specifiers
-    "transformers>=4.40.0,<5.0.0",
+    "transformers (>=4.43.0)",
     "datasets>=3.5.1,<4.0.0",
     "scipy>=1.15.2,<2.0.0",
     "scikit-learn>=1.6.1,<2.0.0",
@@ -24,6 +24,7 @@ dependencies = [
     "hydra-joblib-launcher>=1.2.0,<2.0.0",
     "wandb>=0.19.11,<0.20.0",
     "matplotlib>=3.10.3,<4.0.0",
+    "tokenizers (>=0.21.2,<0.22.0)",
 ]
 
 # Poetry-specific configuration

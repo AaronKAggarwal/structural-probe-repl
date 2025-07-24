@@ -1,0 +1,8 @@
+# configs/embeddings/ud_ewt/Llama-3.2-3B/L19.yaml
+source_model_name: "Llama-3.2-3B"
+layer_index: 19
+dimension: 3072  # Llama 3.2 3B has a hidden size of 3072
+paths:
+  train: "data_staging/embeddings/ud_english_ewt_full/Llama-3.2-3B/ud_english_ewt_full_conllu_train_layers-all_align-mean.hdf5"
+  dev: "data_staging/embeddings/ud_english_ewt_full/Llama-3.2-3B/ud_english_ewt_full_conllu_dev_layers-all_align-mean.hdf5"
+  test: "data_staging/embeddings/ud_english_ewt_full/Llama-3.2-3B/ud_english_ewt_full_conllu_test_layers-all_align-mean.hdf5" 
