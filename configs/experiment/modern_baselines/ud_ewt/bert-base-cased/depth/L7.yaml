@@ -1,0 +1,21 @@
+# configs/experiment/modern_baselines/ud_ewt/bert-base-cased/depth/L7.yaml
+# Probes BERT-base Layer 7 for depth on UD EWT with modern training/evaluation.
+
+name: modern_baselines/ud_ewt/bert-base-cased/depth/L7
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/bert-base-cased/L7    # <--- CHANGED
+  - /probe: depth
+  - /probe_rank@probe: "768"                   # <--- CHANGED (BERT full rank)
+  - /training: adam_modern_scheduler
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: modern_ud_ewt_depth_L7           # <--- CHANGED
+
+evaluation:
+  metrics: ["spearmanr_hm", "root_acc"] # Override default metrics for depth probe
+
+logging:
+  experiment_name: "Modern_UDEWT_BERT_L7_Depth_R768" # <--- CHANGED
