@@ -1,0 +1,21 @@
+# configs/experiment/new_models/ud_ewt/llama-3.2-3B/depth/L7.yaml
+# Probes Llama-3.2-3B Layer 7 for depth on UD EWT with modern training/evaluation.
+
+name: new_models/ud_ewt/llama-3.2-3b/depth/L7
+
+defaults:
+  - _self_
+  - /dataset: ud_ewt/ud_english_ewt_full
+  - /embeddings: ud_ewt/Llama-3.2-3B/L7
+  - /probe: depth
+  - /probe_rank@probe: "128"
+  - /training: adam_modern_scheduler
+  - /evaluation: default
+  - /runtime: mps
+  - /logging: modern_ud_ewt_depth_L7_llama
+
+evaluation:
+  metrics: ["spearmanr_hm", "root_acc"] # Override default metrics for depth probe
+
+logging:
+  experiment_name: "Modern_UDEWT_Llama3.2-3B_L7_Depth_R128" 

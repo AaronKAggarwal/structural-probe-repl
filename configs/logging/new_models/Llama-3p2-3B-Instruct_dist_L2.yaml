@@ -1,0 +1,3 @@
+# configs/logging/new_models/Llama-3p2-3B-Instruct_dist_L2.yaml
+wandb:
+  tags: ["instruct_model", "ud_ewt", "llama-3.2-3b-instruct", "layer2", "distance", "r${probe.rank}"]

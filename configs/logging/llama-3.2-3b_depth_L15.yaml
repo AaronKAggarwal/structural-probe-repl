@@ -1,0 +1,3 @@
+# Make a new folder for these logs
+wandb:
+  tags: ["modern_llm", "ud_ewt", "llama-3.2-3b", "layer15", "depth", "r${probe.rank}"]

@@ -1,0 +1,3 @@
+# configs/logging/new_models/Llama-3p2-3B_dist_L5.yaml
+wandb:
+  tags: ["modern_llm", "ud_ewt", "llama-3.2-3b", "layer5", "distance", "r${probe.rank}"]
