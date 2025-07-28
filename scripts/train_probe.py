@@ -5,7 +5,7 @@ import random
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
-
+import gc
 import hydra
 import numpy as np
 import torch
@@ -546,9 +546,17 @@ def train(cfg: DictConfig) -> Optional[float]:
             for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
                 wandb_log_data_epoch[f"dev/{k}"] = v_met
 
-            if cfg.training.get("eval_on_train_epoch_end", True):
+            eval_freq = cfg.training.get("eval_on_train_every_n_epochs", 1)
+            # Check if we should run the evaluation in this epoch
+            should_eval_on_train = (
+                cfg.training.get("eval_on_train_epoch_end", True)
+                and eval_freq > 0
+                and (epoch + 1) % eval_freq == 0
+            )
+
+            if should_eval_on_train:
                 log.info(
-                    f"Running evaluation on training set for epoch {epoch + 1}..."
+                    f"Running evaluation on training set for epoch {epoch + 1}(eval_freq={eval_freq})..."
                 )
                 # <<< MERGED CHANGE 2 of 3 >>>
                 train_eval_metrics_full = evaluate_probe(
@@ -756,6 +764,17 @@ def train(cfg: DictConfig) -> Optional[float]:
                 wandb.log(wandb_log_data_epoch, step=epoch + 1)
 
     log.info("Training finished.")
+
+    # Clear training and development data from memory before final evaluation
+    log.info("Clearing training and development data from memory before final evaluation...")
+    del train_dataset
+    del train_loader
+    del dev_dataset
+    del dev_loader
+
+    gc.collect()
+    log.info("Garbage collection triggered: cleared training and development data from memory.")
+
     final_metrics_summary: Dict[str, Any] = {
         "best_dev_monitored_metric_value": early_stopper.best_actual_metric
         if early_stopper.best_actual_metric is not None
@@ -829,6 +848,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 embedding_layer_index=cfg.embeddings.layer_index,
                 probe_task_type=cfg.probe.type,
                 embedding_dim=actual_embedding_dim,
+                preload=False,
             )
             test_loader = DataLoader(
                 test_dataset,
@@ -980,9 +1000,6 @@ def train(cfg: DictConfig) -> Optional[float]:
             )
     else:
         log.info("Plotting is disabled via configuration.")
-
-    train_dataset.close_hdf5()
-    dev_dataset.close_hdf5()
 
     if cfg.logging.wandb.enable and wandb.run:
         wandb.finish()

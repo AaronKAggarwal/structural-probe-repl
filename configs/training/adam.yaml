@@ -11,6 +11,7 @@ early_stopping_delta: 0.0
 save_every_epoch_checkpoint: false
 save_checkpoint_every_n_epochs: -1
 eval_on_train_epoch_end: true
+eval_on_train_every_n_epochs: 1
 limit_eval_batches: -1
 limit_train_batches: -1
 eval_every_n_epochs: 1
