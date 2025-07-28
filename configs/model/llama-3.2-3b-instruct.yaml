@@ -1,0 +1,3 @@
+# configs/model/llama-3.2-3b-instruct.yaml
+hf_model_name: "meta-llama/Llama-3.2-3B-Instruct"
+hf_model_name_sanitized: "Llama-3.2-3B-Instruct"
