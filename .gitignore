@@ -78,6 +78,7 @@ data/
 results_staging/
 /results/               # General results directory - adjust if needed
 results/
+/analysis/
 *.log                   # Ignore log files by default
 *.tsv
 *.csv
