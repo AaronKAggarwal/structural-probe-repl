@@ -19,7 +19,12 @@ hydra:
     # The output path is now based on the choice from the 'experiment' config group.
     dir: outputs/${experiment_name}
   sweep:
-    dir: multirun/${experiment_name}
-    subdir: job_${hydra.job.num}
+    # The 'hydra.job.name' is the name of the job being run (e.g., train_probe).
+    dir: multirun/${hydra.job.name}_${now:%Y-%m-%d_%H-%M-%S}
+    # The subdirectory for each individual job within the sweep.
+    # This uses the specific experiment name for each job, which IS available
+    # at the time the job is launched.
+    subdir: ${experiment.name}
+
   job:
     chdir: true
