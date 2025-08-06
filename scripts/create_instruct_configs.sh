@@ -4,7 +4,6 @@
 # Llama-3.2-3B-Instruct model by using the existing base Llama-3.2-3B configs
 # as templates. It handles embeddings, experiments, and logging files.
 #
-# Run this script from the project's root directory.
 
 set -e # Exit immediately if a command fails
 echo "--- Generating Hydra Configs for Llama-3.2-3B-Instruct ---"
