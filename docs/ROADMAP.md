@@ -102,9 +102,6 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
 
 ## Phase 4: Paper Assembly, Finalisation, and Reproducibility Package
 
-**Goal:** Produce a high-quality research paper (or report) and ensure the project is fully reproducible.
+**Goal:** Produce a high-quality paper (or report) and make sure the project is fully reproducible.
 
 **Status: PENDING**
-*   *(Existing content for Tasks and Deliverables is fine)*
-
--
