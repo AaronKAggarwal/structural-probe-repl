@@ -3,6 +3,47 @@ import argparse
 import os
 from pathlib import Path
 
+def discover_available_languages():
+    """
+    Discover available languages by scanning the configs/dataset directory.
+    Returns a dict mapping language names to their dataset config names.
+    """
+    dataset_dir = Path("configs/dataset")
+    if not dataset_dir.exists():
+        return {}
+    
+    languages = {}
+    for dataset_path in dataset_dir.iterdir():
+        if dataset_path.is_dir():
+            dataset_name = dataset_path.name
+            # Look for a config file with the same name as the directory
+            expected_config = dataset_path / f"{dataset_name}.yaml"
+            if expected_config.exists():
+                # Infer language from dataset name (e.g., ud_hindi_hdtb -> hindi, ud_ewt -> english)
+                if "hindi" in dataset_name.lower():
+                    languages["hindi"] = dataset_name
+                elif "ewt" in dataset_name.lower() or "english" in dataset_name.lower():
+                    languages["english"] = dataset_name
+                else:
+                    # For other datasets, use a simplified name
+                    lang_name = dataset_name.replace("ud_", "").split("_")[0]
+                    languages[lang_name] = dataset_name
+    
+    return languages
+
+def show_available_languages():
+    """Display available languages and their corresponding dataset configs."""
+    languages = discover_available_languages()
+    if not languages:
+        print("No language datasets found in configs/dataset/")
+        print("Expected structure: configs/dataset/{dataset_name}/{dataset_name}.yaml")
+        return
+    
+    print("Available languages:")
+    for lang, dataset in languages.items():
+        print(f"  {lang}: {dataset}")
+    print()
+
 def create_config_files(
     model_hf_name: str,
     model_name_sanitized: str,
@@ -122,7 +163,7 @@ logging:
     # ... (rest of the script is unchanged) ...
     print("\nNext Steps:")
     print("1. Extract the embeddings for the model:")
-    print(f"   poetry run python scripts/extract_embeddings.py dataset={dataset_name} model={model_name_sanitized} job.layers_to_extract=all")
+    print(f"   poetry run python scripts/extract_embeddings.py dataset={dataset_name}/{dataset_name} model={model_name_sanitized} job.layers_to_extract=all")
     print("\n2. Run a sweep over all layers for the distance probe:")
     print(f"   poetry run python scripts/train_probe.py -m experiment={experiment_group}/{model_name_sanitized}/dist/L0,L1,L2,...")
 
@@ -131,22 +172,56 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate a full suite of Hydra config files for a probing experiment sweep."
     )
-    # --- FIX: Changed default for sanitized name to be filesystem-safe ---
+    
+    # Show available languages first
+    show_available_languages()
+    
+    # Required language parameter
+    parser.add_argument("--language", type=str, required=True,
+                        help="Language to generate configs for. Use 'list' to see available languages, or 'custom' for manual specification.")
+    
+    # Model parameters
     parser.add_argument("--model_hf_name", type=str, default="bert-base-multilingual-cased", help="Hugging Face model identifier.")
     parser.add_argument("--model_name_sanitized", type=str, default="bert-base-multilingual-cased", help="Filesystem-friendly name for the model.")
-    # --- END FIX ---
-    parser.add_argument("--dataset_name", type=str, default="ud_hindi_hdtb", help="Name of the dataset config file (without .yaml).")
-    parser.add_argument("--experiment_group", type=str, default="baselines_hindi", help="Top-level folder name for the experiments under configs/experiment.")
     parser.add_argument("--model_dimension", type=int, default=768, help="Hidden dimension size of the model embeddings.")
     parser.add_argument("--num_layers", type=int, default=13, help="Total number of layers to generate configs for (embedding layer 0 + N transformer layers).")
     
+    # Optional overrides
+    parser.add_argument("--dataset_name", type=str, default=None, help="Override dataset name (for custom language or non-standard naming).")
+    parser.add_argument("--experiment_group", type=str, default=None, help="Override experiment group name (for custom organization).")
+    
     args = parser.parse_args()
+
+    # Handle special cases
+    if args.language == "list":
+        print("Use one of the available languages shown above.")
+        exit(0)
+    
+    # Discover available languages
+    available_languages = discover_available_languages()
+    
+    if args.language == "custom":
+        if not args.dataset_name or not args.experiment_group:
+            print("ERROR: When using --language custom, you must specify both --dataset_name and --experiment_group")
+            exit(1)
+        dataset_name = args.dataset_name
+        experiment_group = args.experiment_group
+    else:
+        if args.language not in available_languages:
+            print(f"ERROR: Language '{args.language}' not found.")
+            print("Available languages:", list(available_languages.keys()))
+            print("Use --language custom with --dataset_name and --experiment_group for manual specification.")
+            exit(1)
+        
+        # Auto-determine dataset and experiment group
+        dataset_name = args.dataset_name or available_languages[args.language]
+        experiment_group = args.experiment_group or f"baselines_{args.language}"
 
     create_config_files(
         model_hf_name=args.model_hf_name,
-        model_name_sanitized=args.model_name_sanitized.replace('/', '-'), # <-- ADDED SANITIZATION STEP
-        dataset_name=args.dataset_name,
-        experiment_group=args.experiment_group,
+        model_name_sanitized=args.model_name_sanitized.replace('/', '-'),
+        dataset_name=dataset_name,
+        experiment_group=experiment_group,
         model_dimension=args.model_dimension,
         num_layers=args.num_layers,
     )
