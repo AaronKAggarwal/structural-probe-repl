@@ -1,15 +1,14 @@
 # Structural Probe Replication & Extensions
 
-This project aims to replicate the methodology developed in **Hewitt & Manning (2019), "A Structural Probe for Finding Syntax in Word Representations,"** and subsequently extend this work to analyze syntactic encoding in modern Large Language Models (LLMs).
+This project aims to replicate the methodology developed in **Hewitt & Manning (2019), "A Structural Probe for Finding Syntax in Word Representations,"** and subsequently extend this work to analyse syntactic encoding in modern Large Language Models (LLMs).
 
 The original paper introduced a method for identifying syntactic structure in language model representations by finding a linear transformation under which squared L2 distances/norms encode parsing relationships.
 
 ## Project Goals
 
-1.  **Replicate:** Faithfully reproduce the Hewitt & Manning probing methodology, initially by running their original PyTorch code in a containerized legacy environment and then by re-implementing the probe in a modern PyTorch framework.
+1.  **Replicate:** Faithfully reproduce the Hewitt & Manning probing methodology, initially by running their original PyTorch code in a containerised legacy environment and then by re-implementing the probe in a modern PyTorch framework.
 2.  **Verify:** Validate the modern probe implementation against results from H&M's original work on the Penn Treebank (PTB) dataset.
-3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax.
-4.  **Explore:** Investigate novel research directions based on the findings, potentially including different probe types, analysis of model training stages, or mechanistic interpretability approaches.
+3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax, potentially including different probe types, analysis of model training stages etc.
 
 ## Current Status (as of 2025-08-06)
 
@@ -23,7 +22,7 @@ The original paper introduced a method for identifying syntactic structure in la
 
 *   **Phase 1: Modern PyTorch Probe Re-implementation - COMPLETE**
     *   **Core Components:** Implemented and unit-tested a full, modern probing pipeline in `src/torch_probe/`, including data utilities, PyTorch `Dataset`s, `DistanceProbe` and `DepthProbe` models, H&M-aligned loss functions, and evaluation metrics (Spearman, UUAS, Root Accuracy with punctuation filtering).
-    *   **Training Pipeline:** Implemented `scripts/train_probe.py` with Hydra integration, H&M-style optimizer reset, and granular checkpointing. Smoke tests for the full pipeline pass.
+    *   **Training Pipeline:** Implemented `scripts/train_probe.py` with Hydra integration, H&M-style optimiser reset, and granular checkpointing. Smoke tests for the full pipeline pass.
     *   Details in `docs/ARCHITECTURE.md` and `docs/HISTORY.md`.
 
 *   **Phase 2: Pipeline Validation & Dataset Pivot - COMPLETE** 
@@ -38,12 +37,13 @@ The original paper introduced a method for identifying syntactic structure in la
             *   **ELMo (Distance Probe):** Layer 1 (UUAS: 0.72, Spearmanr: 0.71), Layer 2 (UUAS: 0.66, Spearmanr: 0.68), Layer 0 (UUAS: 0.32, Spearmanr: 0.28) on UD EWT.
             *   **BERT-base Layer 7 (Distance Probe):** Test UUAS of 0.800 on UD EWT (Spearmanr of 0.77).
 
-*   **Phase 3: Systematic Probing of Modern LLMs - IN PROGRESS**
+*   **Phase 3: Probing of Modern LLMs - IN PROGRESS**
     *   Successfully extracted embeddings for all layers of `meta-llama/Llama-3.2-3B`, `meta-llama/Llama-3.2-3B-Instruct`, and `bert-base-multilingual-cased` on the UD EWT and UD HDTB datasets.
     *   Completed full depth and distance probe sweeps for all models.
     *   **Key Finding:** Instruction tuning preserves the strength of syntactic encoding in Llama-3.2-3B but shifts its location to deeper layers in the network. See `docs/KEY_RESULTS.md` for details.
+    
 *   **Next Major Phase: Analysis & Paper Drafting**
-    *   Analyze and visualize the syntactic encoding patterns in Llama-3.2 models versus mBERT baselines.
+    *   Analyse and visualise the syntactic encoding patterns in Llama-3.2 models versus mBERT baselines.
     *   Begin drafting research paper based on key findings.
 
 ## Repository Structure Overview

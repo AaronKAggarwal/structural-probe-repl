@@ -1,6 +1,6 @@
 # Repository Architecture
 
-Last updated: 2025-07-16 <!-- Updated date -->
+Last updated: 2025-07-16
 
 This document explains the layout of the `structural-probe-repl` project, covering the vendored original Hewitt & Manning (2019) codebase and the new, modern PyTorch implementation.
 
