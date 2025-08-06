@@ -28,11 +28,11 @@ MANIFEST
 .env
 .venv
 env/*                 # ignore everything under env …
-!env/                 # …but allow the directory itself
 venv/
 \ENV/
 env.bak/
 venv.bak/
+env/Dockerfile.legacy_pt_cpu
 
 # --- IDE / Editor / OS Files ---
 .vscode/
