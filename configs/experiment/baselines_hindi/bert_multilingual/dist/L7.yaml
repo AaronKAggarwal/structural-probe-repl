@@ -1,0 +1,18 @@
+# configs/experiment/baselines_hindi/bert_multilingual/dist/L7.yaml
+name: baselines_hindi/bert_multilingual/dist/L7
+
+defaults:
+  - _self_
+  - /dataset: ud_hindi_hdtb
+  - /embeddings: ud_hindi_hdtb/bert-base-multilingual-cased/L7
+  - /probe: distance
+  - /probe_rank@probe: "128"
+  - /training: adam_modern_scheduler
+  - /evaluation: default  # Important: Use the default with 'upos' for punctuation
+  - /runtime: mps         # Or 'cuda' if you have it
+  - /logging: wandb       # Or another logging config
+
+logging:
+  experiment_name: "Hindi_UDEWT_mBERT_L7_Dist_R128"
+  wandb:
+    tags: ["hindi_baseline", "ud_hindi", "mbert", "layer7", "distance", "r128"]
