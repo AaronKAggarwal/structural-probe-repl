@@ -80,9 +80,9 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
 
 ## Phase 3: Systematic Probing of Modern LLMs on Universal Dependencies
 
-**Goal:** Apply the validated modern PyTorch probe to a diverse set of recent Hugging Face LLMs using the prepared **UD English EWT dataset**. <!-- Updated Dataset -->
+**Goal:** Apply the validated modern PyTorch probe to a diverse set of recent Hugging Face LLMs using the prepared **UD English EWT dataset**.
 
-**Status: PENDING (Next Phase)**
+**Status: PENDING (Current Phase)**
 
 *   **Tasks:**
     1.  **Finalize Target Modern LLMs:** Select a diverse set (e.g., Llama-3 8B, Mistral-7B, a RoBERTa variant, etc.). Document rationale.
@@ -100,22 +100,11 @@ To replicate the Hewitt & Manning (2019) structural probe methodology on a range
 
 ---
 
-## Phase 4: Extensions & Novel Research
-
-**Goal:** Explore advanced research questions and extend the probing methodology based on findings from Phase 3.
-
-**Status: PENDING**
-*   *(Existing content for Potential Tasks and Deliverables is fine)*
-
----
-
-## Phase 5: Paper Assembly, Finalization, and Reproducibility Package
+## Phase 4: Paper Assembly, Finalisation, and Reproducibility Package
 
 **Goal:** Produce a high-quality research paper (or report) and ensure the project is fully reproducible.
 
 **Status: PENDING**
 *   *(Existing content for Tasks and Deliverables is fine)*
 
----
-
-This roadmap provides a comprehensive overview. Specific tasks and timelines within each phase will be refined as the project progresses.
+-

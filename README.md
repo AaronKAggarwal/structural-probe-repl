@@ -11,7 +11,7 @@ The original paper introduced a method for identifying syntactic structure in la
 3.  **Extend:** Apply the modern structural probe to a range of contemporary LLMs (from Hugging Face) using the **Universal Dependencies (UD)** treebanks to investigate how these newer models encode syntax.
 4.  **Explore:** Investigate novel research directions based on the findings, potentially including different probe types, analysis of model training stages, or mechanistic interpretability approaches.
 
-## Current Status (as of 2025-07-16)
+## Current Status (as of 2025-08-06)
 
 *   **Phase 0: Environment Setup & Legacy Probe Replication - COMPLETE**
     *   **Native macOS Development Environment (PyTorch 2.x, MPS):** Successfully set up using Python 3.11 and Poetry. Core dependencies installed and MPS functionality verified. (See `docs/ENV_SETUP.md`)
@@ -29,9 +29,7 @@ The original paper introduced a method for identifying syntactic structure in la
 *   **Phase 2: Pipeline Validation & Dataset Pivot - COMPLETE** 
 
     *   **PTB-SD Replication (Methodology Validation):**
-        *   Successfully processed the Penn Treebank (PTB) into Stanford Dependencies (CoNLL-X) using `data_processing_scripts/ptb_to_conllx.sh`.
-        *   Developed `scripts/extract_embeddings.py` for extracting word-aligned embeddings from Hugging Face models.
-        *   **Completed a full replication of Hewitt & Manning (2019, Table 1)** for the BERT-base Layer 7 Distance Probe on PTB-SD, achieving highly consistent UUAS and DSpr metrics. **This validates the correctness of the modern pipeline.**
+        *   Removed.
     *   **Pivot to Universal Dependencies (UD):**
         *   The project's primary dataset for extension has been shifted from PTB-SD to the **Universal Dependencies English Web Treebank (UD EWT)** to align with modern NLP standards and facilitate cross-linguistic work.
         *   All data loading and evaluation code has been verified for compatibility with the UD CoNLL-U format.
@@ -40,10 +38,13 @@ The original paper introduced a method for identifying syntactic structure in la
             *   **ELMo (Distance Probe):** Layer 1 (UUAS: 0.72, Spearmanr: 0.71), Layer 2 (UUAS: 0.66, Spearmanr: 0.68), Layer 0 (UUAS: 0.32, Spearmanr: 0.28) on UD EWT.
             *   **BERT-base Layer 7 (Distance Probe):** Test UUAS of 0.800 on UD EWT (Spearmanr of 0.77).
 
-*   **Next Major Phase: Systematic Probing of Modern LLMs on Universal Dependencies**
-    *   Replicate depth probe baselines for ELMo and BERT on UD EWT.
-    *   Extract embeddings and run distance/depth probes for a selection of modern LLMs (e.g., Llama-3, Mistral) on UD EWT.
-    *   Analyze and compare syntactic encoding across different model architectures and scales.
+*   **Phase 3: Systematic Probing of Modern LLMs - IN PROGRESS**
+    *   Successfully extracted embeddings for all layers of `meta-llama/Llama-3.2-3B`, `meta-llama/Llama-3.2-3B-Instruct`, and `bert-base-multilingual-cased` on the UD EWT and UD HDTB datasets.
+    *   Completed full depth and distance probe sweeps for all models.
+    *   **Key Finding:** Instruction tuning preserves the strength of syntactic encoding in Llama-3.2-3B but shifts its location to deeper layers in the network. See `docs/KEY_RESULTS.md` for details.
+*   **Next Major Phase: Analysis & Paper Drafting**
+    *   Analyze and visualize the syntactic encoding patterns in Llama-3.2 models versus mBERT baselines.
+    *   Begin drafting research paper based on key findings.
 
 ## Repository Structure Overview
 
@@ -61,27 +62,3 @@ The original paper introduced a method for identifying syntactic structure in la
     *   `src/legacy/structural_probe/`: Vendored original Hewitt & Manning codebase.
     *   `src/torch_probe/`: Modern PyTorch re-implementation of the probe and utilities.
 *   **`tests/`**: Unit tests and smoke tests.
-
-## Getting Started
-
-1.  **Understand the Project:** Start by reading this README and then:
-    *   `docs/PROJECT_OVERVIEW.md`: For the research context and goals.
-    *   `docs/ROADMAP.md`: For the detailed project plan and phase descriptions.
-    *   Original Paper: [Hewitt & Manning (2019), A Structural Probe for Finding Syntax in Word Representations](https://www.aclweb.org/anthology/N19-1042/)
-2.  **Set up Environment:** Follow the instructions in `docs/ENV_SETUP.md` to set up either the native macOS environment or the Dockerized legacy environment.
-3.  **Explore the Code:** Refer to `docs/ARCHITECTURE.md` for a guide to the codebase.
-4.  **Verify Configurations:** Run the smoke test suite to ensure all experiment setups are valid before launching a full run: `./scripts/test_all_configs.sh`.
-5.  **Run Experiments (Modern Probe):** See `docs/EXPERIMENT_PROTOCOL.md` for instructions on using `scripts/train_probe.py` with Hydra.
-6.  **Run Legacy Examples:** See `docs/ENV_SETUP.md` (Section 2) for running the legacy probe examples within Docker.
-
-## Key Documentation Files
-
-*   **`docs/DOC_INDEX.md`**: Master list of all documentation.
-*   **`docs/HISTORY.md`**: Chronological log of development and debugging.
-*   **`docs/QUIRKS.md`**: Important notes on non-obvious issues and workarounds.
-
-## License
-
-This project's custom code (e.g., in `src/torch_probe/`, `scripts/`) is licensed under the [YOUR CHOSEN LICENSE, e.g., MIT License]. The vendored code in `src/legacy/structural_probe/` is subject to its original license (see `src/legacy/structural_probe/LICENSE`).
-
----

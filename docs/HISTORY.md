@@ -51,4 +51,12 @@ This document tracks significant milestones, challenges, and resolutions encount
 
 | July 22     | **Phase 2d: Codebase Refactor & Baseline Re-validation** | Major refactoring of `extract_embeddings.py`, smoke tests, and configuration system required re-validation of all baseline results to ensure scientific correctness was maintained. | **Successfully re-ran all baseline experiments.** New results (**BERT L7 on PTB Test UUAS: 0.8062**, **ELMo L1 on UD EWT Test UUAS: 0.7236**) are highly consistent with previous runs. This validates the correctness of the refactored codebase and establishes a final, stable set of baselines for Phase 3. |
 
+| July 28     | Llama 3.2 Embedding Extraction            | Used `extract_embeddings.py` to generate HDF5 files for all layers of `Llama-3.2-3B` and `Llama-3.2-3B-Instruct` on UD EWT. | **COMPLETE.** All embeddings for Phase 3 Llama models are now available in `data_staging/`. |
+| July 29     | Llama 3.2 Probe Sweeps                    | Ran full depth and distance probe sweeps across all layers for both Llama models using the `new_models` experiment configurations. | **COMPLETE.** All raw results are in the `outputs/` directory and logged to W&B. |
+| Aug 1     | mBERT Hindi Sweeps                     | Ran full depth and distance sweeps for `bert-base-multilingual-cased` on UD HDTB (Hindi). | **COMPLETE.** Established a research strategy pivot. |
+to W&B. |
+| Jul-Aug     | Multimodal Sweeps                     | DEveloped full pipeline for multimodal probing using Gemma 3-4B. Results found but UUAS baselines too low (perhaps due to RoPE embeddings or other archetectural factors). | **COMPLETE.** Established a research strategy pivot. |
+to W&B. |
+| Aug 6     | mBERT Baseline Sweeps                     | Ran full depth and distance sweeps for `bert-base-multilingual-cased` on UD HDTB (Hindi). | **COMPLETE.** Established cross-lingual baselines. |
+
 (This history will be appended as the project progresses.)
