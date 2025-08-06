@@ -45,7 +45,7 @@ class DistanceProbe(nn.Module):
         projected_embeddings = self.projection_layer(embeddings_batch)
 
         # Use the identity ||a-b||^2 = ||a||^2 - 2a^Tb + ||b||^2 to compute distances
-        # without creating a massive intermediate tensor.
+        # without creating large intermediate tensors.
 
         # norms_sq shape: (B, S, 1)
         norms_sq = torch.sum(projected_embeddings.pow(2), dim=2, keepdim=True)
@@ -109,7 +109,7 @@ class DepthProbe(nn.Module):
         return squared_depths
 
 
-# __main__ block remains unchanged for standalone testing.
+# __main__ block for standalone testing.
 if __name__ == "__main__":
     B, S, E, K = 2, 5, 10, 3
     print("--- Testing DistanceProbe ---")

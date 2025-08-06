@@ -1,0 +1,3 @@
+# configs/model/bert-base-multilingual-cased.yaml
+hf_model_name: "bert-base-multilingual-cased"
+hf_model_name_sanitized: "bert-base-multilingual-cased"
