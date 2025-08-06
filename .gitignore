@@ -29,7 +29,6 @@ MANIFEST
 .venv
 env/*                 # ignore everything under env …
 !env/                 # …but allow the directory itself
-!env/Dockerfile.legacy_pt_cpu   # …and keep this single file
 venv/
 \ENV/
 env.bak/
