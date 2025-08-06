@@ -13,13 +13,11 @@ import torch.multiprocessing
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
-# --- Add src to path for direct execution ---
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.append(str(SRC_ROOT))
-# --- End Path Addition ---
 
 # --- W&B Import ---
 try:
@@ -387,13 +385,11 @@ def train(cfg: DictConfig) -> Optional[float]:
             train_loader, desc=f"Epoch {epoch + 1} Training", unit="batch", leave=False
         )
 
-        # --- START OF MODIFICATION ---
         limit_train_batches = cfg.training.get("limit_train_batches", -1)
         if limit_train_batches > 0:
             log.warning(
                 f"!!! Limiting training to {limit_train_batches} batches for this epoch !!!"
             )
-        # --- END OF MODIFICATION ---
 
         for batch_idx, batch in enumerate(train_pbar):
             embeddings_b = batch["embeddings_batch"].to(device, non_blocking=True)
@@ -435,10 +431,8 @@ def train(cfg: DictConfig) -> Optional[float]:
                     commit=True,
                 )
 
-            # --- START OF MODIFICATION ---
             if limit_train_batches > 0 and (batch_idx + 1) >= limit_train_batches:
                 break
-            # --- END OF MODIFICATION ---
 
         avg_train_loss = (
             epoch_train_loss / num_train_batches if num_train_batches > 0 else 0.0
@@ -449,7 +443,7 @@ def train(cfg: DictConfig) -> Optional[float]:
         wandb_log_data_epoch["train/epoch_loss"] = avg_train_loss
         wandb_log_data_epoch["trainer/learning_rate"] = optimizer.param_groups[0]["lr"]
 
-        # --- MODIFICATION: Add the conditional evaluation block ---
+
 
         # Determine if we should run evaluation on this epoch
         is_eval_epoch = (epoch + 1) % cfg.training.get("eval_every_n_epochs", 1) == 0
@@ -460,7 +454,6 @@ def train(cfg: DictConfig) -> Optional[float]:
                 log.info(f"Forcing evaluation on the final epoch ({epoch + 1}).")
 
             log.info(f"Running validation for epoch {epoch + 1}...")
-            # <<< MERGED CHANGE 1 of 3 >>>
             limit_batches = cfg.training.get("limit_eval_batches", -1)
             if limit_batches > 0:
                 log.warning(
@@ -558,7 +551,6 @@ def train(cfg: DictConfig) -> Optional[float]:
                 log.info(
                     f"Running evaluation on training set for epoch {epoch + 1}(eval_freq={eval_freq})..."
                 )
-                # <<< MERGED CHANGE 2 of 3 >>>
                 train_eval_metrics_full = evaluate_probe(
                     probe_model,
                     train_loader_for_eval,
@@ -683,7 +675,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                     f"New best {monitor_metric} for checkpointing: {current_dev_metric_to_monitor:.4f} (was {early_stopper.best_actual_metric if early_stopper.best_actual_metric is not None else 'N/A'})."
                 )
 
-            # --- Modified Checkpointing Logic ---
+
             should_call_save_checkpoint_func = False
             if is_best_for_checkpoint:
                 should_call_save_checkpoint_func = True
@@ -723,7 +715,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 log.debug(
                     f"Skipping non-best checkpoint for epoch {epoch + 1} as per configuration."
                 )
-            # --- End Modified Checkpointing Logic ---
+
 
             if lr_scheduler_custom:
                 new_opt = lr_scheduler_custom.step(
@@ -755,7 +747,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 )
                 break
         else:
-            # --- This is the new `else` block for non-evaluation epochs ---
+
             log.info(
                 f"Skipping evaluation for epoch {epoch + 1} as per 'eval_every_n_epochs' setting."
             )
@@ -857,7 +849,6 @@ def train(cfg: DictConfig) -> Optional[float]:
                 num_workers=cfg.runtime.get("num_workers", 0),
                 pin_memory=torch.cuda.is_available(),
             )
-            # <<< MERGED CHANGE 3 of 3 >>>
             test_metrics_full = evaluate_probe(
                 probe_model,
                 test_loader,

@@ -13,13 +13,11 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 
-# --- Add src to path for direct execution ---
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.append(str(SRC_ROOT))
-# --- End Path Addition ---
 
 from torch_probe.utils.conllu_reader import SentenceData, read_conll_file
 from torch_probe.utils.alignment import robust_align_subword_embeddings

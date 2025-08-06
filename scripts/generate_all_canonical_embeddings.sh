@@ -8,7 +8,7 @@ poetry run python scripts/extract_embeddings.py \
   dataset=ptb_sd/ptb_sd_official \
   model=bert-base-cased \
   runtime=mps \
-  job.layers_to_extract='all' # <-- CORRECTED: Extract ALL layers
+  job.layers_to_extract='all'
 
 # --- BERT-base-cased on UD EWT ---
 echo -e "\n>> Generating BERT-base-cased embeddings for UD EWT (all layers)..."
@@ -16,7 +16,7 @@ poetry run python scripts/extract_embeddings.py \
   dataset=ud_ewt/ud_english_ewt_full \
   model=bert-base-cased \
   runtime=mps \
-  job.layers_to_extract='all' # <-- CORRECTED: Extract ALL layers
+  job.layers_to_extract='all'
 
 # --- ELMo on PTB ---
 echo -e "\n>> Generating ELMo embeddings for PTB-SD..."

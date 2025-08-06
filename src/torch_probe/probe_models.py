@@ -39,7 +39,6 @@ class DistanceProbe(nn.Module):
                 f"got {embeddings_batch.shape}"
             )
 
-        # --- MODIFICATION: Replaced forward pass with the faster alternative algorithm ---
         # Project embeddings: B h^T
         # embeddings_batch shape: (B, S, E) -> projected_embeddings shape: (B, S, K)
         projected_embeddings = self.projection_layer(embeddings_batch)
@@ -58,7 +57,6 @@ class DistanceProbe(nn.Module):
         # norms_sq shape: (B, S, 1)
         # The addition and subtraction broadcast correctly across the matrix.
         squared_distances = norms_sq.transpose(1, 2) - 2 * dot_products + norms_sq
-        # --- END MODIFICATION ---
 
         return squared_distances
 

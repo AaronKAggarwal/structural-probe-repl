@@ -68,11 +68,9 @@ def create_config_files(
 
     base_path = Path(base_output_dir)
 
-    # --- FIX: Use model_name_sanitized consistently for all directory paths ---
     embeddings_dir = base_path / "embeddings" / dataset_name / model_name_sanitized
     logging_dir = base_path / "logging" / f"{dataset_name}_{model_name_sanitized}"
-    experiment_dir = base_path / "experiment" / experiment_group / model_name_sanitized # This line is the fix
-    # --- END FIX ---
+    experiment_dir = base_path / "experiment" / experiment_group / model_name_sanitized
 
     # Create directories if they don't exist
     embeddings_dir.mkdir(parents=True, exist_ok=True)

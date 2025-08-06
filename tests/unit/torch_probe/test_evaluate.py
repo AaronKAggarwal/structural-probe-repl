@@ -7,7 +7,7 @@ from scipy.stats import spearmanr as scipy_spearmanr
 # Import the new and updated functions from your evaluate module
 from src.torch_probe.evaluate import (
     calculate_root_accuracy,  # Import H&M XPOS punct set
-    calculate_spearmanr_hm_style,  # Changed from calculate_spearmanr
+    calculate_spearmanr_hm_style,
     calculate_uuas,
 )
 
@@ -196,7 +196,6 @@ def test_uuas_perfect_match():
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "NN"]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "NOUN"]]  # Dummy UPOS tags
-    # FIX: Add missing arguments
     mean_uuas, _ = calculate_uuas(
         pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -211,7 +210,6 @@ def test_uuas_no_match():
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "JJ"]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "ADJ"]]  # Dummy UPOS tags
-    # FIX: Add missing arguments
     mean_uuas, _ = calculate_uuas(
         pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -229,7 +227,6 @@ def test_uuas_with_punctuation_ignored_xpos():
     lengths = [4]
     xpos_tags: List[List[str]] = [["NN", "VB", ".", ","]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT", "PUNCT"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_uuas, _ = calculate_uuas(
         pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -242,7 +239,6 @@ def test_uuas_all_punctuation_xpos():
     lengths = [2]
     xpos_tags: List[List[str]] = [[".", ","]]
     upos_tags: List[List[str]] = [["PUNCT", "PUNCT"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_uuas, _ = calculate_uuas(
         pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -255,7 +251,6 @@ def test_uuas_short_sentence_xpos():
     lengths = [1]
     xpos_tags: List[List[str]] = [["NN"]]
     upos_tags: List[List[str]] = [["NOUN"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_uuas, _ = calculate_uuas(
         pred_dists, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -274,7 +269,6 @@ def test_root_accuracy_correct_xpos():
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "JJ"]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "ADJ"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_acc, _ = calculate_root_accuracy(
         pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -287,7 +281,6 @@ def test_root_accuracy_with_punctuation_ignored_xpos():
     lengths = [4]
     xpos_tags: List[List[str]] = [["NN", "VB", ".", "JJ"]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT", "ADJ"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_acc, _ = calculate_root_accuracy(
         pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -300,7 +293,6 @@ def test_root_accuracy_gold_root_is_punctuation_xpos():
     lengths = [3]
     xpos_tags: List[List[str]] = [["NN", "VB", "."]]
     upos_tags: List[List[str]] = [["NOUN", "VERB", "PUNCT"]]  # Dummy UPOS
-    # FIX: Add missing arguments
     mean_acc, _ = calculate_root_accuracy(
         pred_depths, gold_heads, lengths, xpos_tags, upos_tags, "xpos"
     )
@@ -308,7 +300,6 @@ def test_root_accuracy_gold_root_is_punctuation_xpos():
 
 
 def test_root_accuracy_empty_or_short_xpos():
-    # FIX: Add missing arguments
     mean_acc_empty, _ = calculate_root_accuracy([], [], [], [], [], "xpos")
     assert mean_acc_empty == 0.0
 
@@ -342,7 +333,6 @@ def test_uuas_with_punctuation_ignored_upos():
     upos_tags: List[List[str]] = [
         ["NOUN", "VERB", "PUNCT", "SYM"]
     ]  # Use UPOS tags for filtering
-    # FIX: Add missing arguments and test "upos" strategy
     mean_uuas, _ = calculate_uuas(
         pred_dists_full, gold_heads_full, lengths, xpos_tags, upos_tags, "upos"
     )

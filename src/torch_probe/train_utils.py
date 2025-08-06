@@ -134,7 +134,6 @@ class LRSchedulerWithOptimizerReset:
                         )
 
                     # Create a new optimizer config with the updated LR
-                    # Ensure this works with OmegaConf DictConfig
                     from omegaconf import OmegaConf  # Local import for safety
 
                     if isinstance(self.optimizer_cfg_template, OmegaConf):
@@ -219,7 +218,7 @@ class EarlyStopper:
 
         return self.early_stop
 
-    def reset(self) -> None:  # <<< ADD THIS METHOD
+    def reset(self) -> None:
         """Resets the EarlyStopper's state."""
         self.counter = 0
         self.best_actual_metric = None  # Will be re-initialized on the next call

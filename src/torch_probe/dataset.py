@@ -67,7 +67,6 @@ class ProbeDataset(Dataset):
         
         self.gold_labels: List[np.ndarray] = self._calculate_all_gold_labels()
 
-        # --- NEW: Pre-loading Logic ---
         self.preloaded_data: Optional[List[Dict[str, Any]]] = None
         if self.preload:
             print(f"Pre-loading data from {Path(self.conllu_filepath).name} into RAM...")
@@ -77,7 +76,6 @@ class ProbeDataset(Dataset):
                 for i in tqdm(range(len(self.parsed_sentences)), desc="Pre-loading"):
                     self.preloaded_data.append(self._get_item_data(i, hdf5_file_object))
             print("Pre-loading complete.")
-        # --- END NEW ---
 
     def _calculate_all_gold_labels(self) -> List[np.ndarray]:
         """Helper to compute all gold labels during initialization."""
@@ -150,7 +148,6 @@ class ProbeDataset(Dataset):
                 return self._get_item_data(idx, hdf5_file_object)
 
 
-    # --- CHANGE: These methods are no longer essential for this loading mode but are kept for API consistency ---
     def close_hdf5(self):
         """This method is now a no-op for on-disk loading, as file handles
         are managed within __getitem__. It remains for compatibility and
@@ -160,7 +157,6 @@ class ProbeDataset(Dataset):
     def __del__(self):
         """No persistent file handle to close."""
         pass
-    # --- END CHANGE ---
 
 
 def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:

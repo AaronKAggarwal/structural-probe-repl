@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 
 log = logging.getLogger(__name__)
 
-# <<< MERGED CHANGE: Added UPOS punctuation set >>>
 # Punctuation tag sets
 H_M_PUNCTUATION_XPOS_TAGS = {"''", ",", ".", ":", "``", "-LRB-", "-RRB-"}
 UPOS_PUNCTUATION_TAGS = {"PUNCT", "SYM"}
@@ -183,7 +182,6 @@ def calculate_spearmanr_hm_style(
     )
 
 
-# <<< MERGED CHANGE: Function signature and logic updated for punctuation_strategy >>>
 def calculate_uuas(
     all_predicted_distances: List[np.ndarray],
     all_gold_head_indices: List[List[int]],
@@ -301,7 +299,6 @@ def calculate_uuas(
     return mean_uuas_micro_avg, per_sentence_uuas_scores
 
 
-# <<< MERGED CHANGE: Function signature and logic updated for punctuation_strategy >>>
 def calculate_root_accuracy(
     all_predicted_depths: List[np.ndarray],
     all_gold_head_indices: List[List[int]],
@@ -389,7 +386,6 @@ def calculate_root_accuracy(
     return mean_accuracy, sentence_level_root_outcomes
 
 
-# <<< MERGED CHANGE: Function signature and logic updated for punctuation_strategy >>>
 def evaluate_probe(
     probe_model: nn.Module,
     dataloader: DataLoader,

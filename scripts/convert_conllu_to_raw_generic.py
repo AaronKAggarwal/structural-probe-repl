@@ -3,13 +3,11 @@ import argparse  # For command-line arguments
 import sys
 from pathlib import Path
 
-# --- Add src to path for direct execution (if conllu_reader is in src) ---
 SCRIPT_DIR_CONV = Path(__file__).resolve().parent
 PROJECT_ROOT_CONV = SCRIPT_DIR_CONV.parent
 SRC_ROOT_CONV = PROJECT_ROOT_CONV / "src"
 if str(SRC_ROOT_CONV) not in sys.path:
     sys.path.append(str(SRC_ROOT_CONV))
-# --- End Path Addition ---
 from torch_probe.utils.conllu_reader import read_conll_file  # Use your modern reader
 
 

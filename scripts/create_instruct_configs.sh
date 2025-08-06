@@ -73,8 +73,6 @@ mkdir -p "${LOGGING_DIR}"
 echo ">>> Creating Logging configs in ${LOGGING_DIR}..."
 
 for i in $(seq 0 27); do
-    # It seems your logging files for llama are not in a sub-directory, let's use a template.
-    # We will create a generic template here to be safe.
     LOG_FILE_CONTENT="wandb:\n  tags: [\"instruct_model\", \"ud_ewt\", \"llama-3.2-3b-instruct\", \"layer${i}\", \"depth\", \"r\${probe.rank}\"]"
     
     OUTPUT_FILE="${LOGGING_DIR}/llama-3.2-3b-instruct_depth_L${i}.yaml"
@@ -92,11 +90,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ">>> Creating Distance Probe Experiment configs in ${EXP_DIR_DIST}..."
 
     for i in $(seq 0 27); do
-        # We assume a dist folder exists for the base model, or we create it from a template
         TEMPLATE_FILE="${CONFIGS_ROOT}/experiment/new_models/ud_ewt/${BASE_MODEL_NAME}/dist/L${i}.yaml"
         if [ ! -f "${TEMPLATE_FILE}" ]; then
             echo "Warning: No distance template for L${i}. Creating from depth template and modifying."
-            TEMPLATE_FILE="${CONFIGS_ROOT}/experiment/new_models/ud_ewt/${BASE_MODEL_NAME}/depth/L0.yaml" # Use a known good file
+            TEMPLATE_FILE="${CONFIGS_ROOT}/experiment/new_models/ud_ewt/${BASE_MODEL_NAME}/depth/L0.yaml"
             
             OUTPUT_FILE="${EXP_DIR_DIST}/L${i}.yaml"
             sed "s|${BASE_MODEL_NAME}|${INSTRUCT_MODEL_NAME}|g" "${TEMPLATE_FILE}" > "${OUTPUT_FILE}"
