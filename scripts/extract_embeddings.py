@@ -62,7 +62,11 @@ def extract_embeddings_main(cfg: DictConfig) -> None:
     model_name = cfg.model.hf_model_name
     log.info(f"Loading tokenizer and model: {model_name}")
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer_kwargs = {}
+        # GPT-2 style tokenizers require add_prefix_space=True for pre-tokenized input
+        if "gpt2" in model_name.lower():
+            tokenizer_kwargs["add_prefix_space"] = True
+        tokenizer = AutoTokenizer.from_pretrained(model_name, **tokenizer_kwargs)
         model = AutoModel.from_pretrained(model_name, output_hidden_states=True)
         model.to(device)
         model.eval()

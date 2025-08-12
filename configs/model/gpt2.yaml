@@ -1,0 +1,3 @@
+# configs/model/gpt2.yaml
+hf_model_name: "gpt2"
+hf_model_name_sanitized: "gpt2"

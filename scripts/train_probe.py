@@ -297,6 +297,18 @@ def train(cfg: DictConfig) -> Optional[float]:
         num_workers=cfg.runtime.get("num_workers", 0),
         pin_memory=torch.cuda.is_available(),
     )
+    # Use a separate, non-shuffling DataLoader for evaluating on the training set.
+    # This avoids consuming RNG state from the shuffling training DataLoader, which
+    # would otherwise change the subsequent epoch's batch order depending on how
+    # often train-set evaluation runs.
+    train_loader_eval = DataLoader(
+        train_dataset,
+        batch_size=cfg.training.batch_size,
+        collate_fn=collate_probe_batch,
+        shuffle=False,
+        num_workers=cfg.runtime.get("num_workers", 0),
+        pin_memory=torch.cuda.is_available(),
+    )
     log.info(
         f"Data loaded. Train: {len(train_dataset)}, Dev: {len(dev_dataset)} sentences."
     )
@@ -463,11 +475,13 @@ def train(cfg: DictConfig) -> Optional[float]:
                     batch for i, batch in enumerate(dev_loader) if i < limit_batches
                 ]
                 train_loader_for_eval = [
-                    batch for i, batch in enumerate(train_loader) if i < limit_batches
+                    batch
+                    for i, batch in enumerate(train_loader_eval)
+                    if i < limit_batches
                 ]
             else:
                 dev_loader_for_eval = dev_loader
-                train_loader_for_eval = train_loader
+                train_loader_for_eval = train_loader_eval
 
             dev_metrics_full = evaluate_probe(
                 probe_model,
