@@ -5,3 +5,5 @@ name: extract_embeddings
 output_hdf5_path: "data_staging/embeddings/${dataset.name}/${model.hf_model_name_sanitized}/"
 layers_to_extract: "all"
 alignment_strategy: "mean"
+save_tokenization_map: true
+save_input_ids: true

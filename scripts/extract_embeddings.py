@@ -128,6 +128,12 @@ def extract_embeddings_main(cfg: DictConfig) -> None:
             hdf5_file.attrs["layers_extracted_indices"] = json.dumps(layers_to_extract_indices)
             hdf5_file.attrs["original_conll_file"] = str(conll_abs_path)
 
+            # Optional, backward-compatible tokenization metadata containers
+            save_tok_map = bool(cfg.job.get("save_tokenization_map", False))
+            save_input_ids = bool(cfg.job.get("save_input_ids", False))
+            word_ids_group = hdf5_file.create_group("word_ids") if save_tok_map else None
+            input_ids_group = hdf5_file.create_group("input_ids") if save_input_ids else None
+
             total_sentences_processed = 0
             for sent_idx, sentence_data in enumerate(tqdm(parsed_sentences, desc=f"Extracting for {split_name}")):
                 original_words: List[str] = sentence_data["tokens"]
@@ -158,6 +164,19 @@ def extract_embeddings_main(cfg: DictConfig) -> None:
                     continue
                 
                 hdf5_file.create_dataset(str(sent_idx), data=final_word_embeddings_for_sentence.numpy())
+
+                # Persist tokenization artifacts if requested
+                if save_tok_map and word_ids_group is not None:
+                    # map None -> -1 for specials
+                    import numpy as np
+                    word_ids_np = np.array(
+                        [wi if wi is not None else -1 for wi in word_ids_for_sent],
+                        dtype=np.int32,
+                    )
+                    word_ids_group.create_dataset(str(sent_idx), data=word_ids_np)
+                if save_input_ids and input_ids_group is not None:
+                    input_ids_np = tokenized_output["input_ids"].squeeze(0).cpu().numpy()
+                    input_ids_group.create_dataset(str(sent_idx), data=input_ids_np)
                 total_sentences_processed += 1
 
             log.info(f"Finished processing '{split_name}'. Saved {total_sentences_processed}/{len(parsed_sentences)} sentences to {hdf5_output_path}.")

@@ -52,6 +52,7 @@ from torch_probe.train_utils import (
     load_checkpoint,
     save_checkpoint,
 )
+from torch_probe.utils.gold_exporter import export_gold_geometry_hdf5
 
 # --- tqdm Import for progress bar ---
 try:
@@ -380,6 +381,65 @@ def train(cfg: DictConfig) -> Optional[float]:
     )
 
     log.info("Starting training...")
+
+    # Optional: export verifiable gold geometry once per split
+    try:
+        gold_export_cfg = cfg.evaluation.get("gold_export")
+        if gold_export_cfg and gold_export_cfg.get("enable", False):
+            # Resolve output dir relative to original project root
+            def resolve_outdir(p_str: Optional[str]) -> Path:
+                if p_str is None:
+                    return output_dir  # fallback to run output dir
+                p = Path(p_str)
+                return (original_cwd / p) if not p.is_absolute() else p
+
+            base_dir = resolve_outdir(gold_export_cfg.get("output_dir"))
+            # Train split
+            out_train = base_dir / f"{cfg.dataset.name}_train_gold.hdf5"
+            if not out_train.exists():
+                export_gold_geometry_hdf5(
+                    parsed_sentences=train_dataset.parsed_sentences,
+                    conllu_path=train_conllu_path,
+                    output_hdf5_path=out_train,
+                    dataset_name=cfg.dataset.name,
+                    split_name="train",
+                )
+                log.info(f"Exported gold geometry for TRAIN to {out_train}")
+            else:
+                log.info(f"Gold geometry for TRAIN already exists at {out_train}; skipping export.")
+            # Dev split
+            out_dev = base_dir / f"{cfg.dataset.name}_dev_gold.hdf5"
+            if not out_dev.exists():
+                export_gold_geometry_hdf5(
+                    parsed_sentences=dev_dataset.parsed_sentences,
+                    conllu_path=dev_conllu_path,
+                    output_hdf5_path=out_dev,
+                    dataset_name=cfg.dataset.name,
+                    split_name="dev",
+                )
+                log.info(f"Exported gold geometry for DEV to {out_dev}")
+            else:
+                log.info(f"Gold geometry for DEV already exists at {out_dev}; skipping export.")
+            # Test split (if available)
+            if cfg.dataset.paths.get("conllu_test"):
+                test_conllu_path = resolve_path(cfg.dataset.paths.conllu_test)
+                # We don't need embeddings to export gold; avoid loading a full dataset
+                from torch_probe.utils.conllu_reader import read_conll_file
+                parsed_test = read_conll_file(str(test_conllu_path))
+                out_test = base_dir / f"{cfg.dataset.name}_test_gold.hdf5"
+                if not out_test.exists():
+                    export_gold_geometry_hdf5(
+                        parsed_sentences=parsed_test,
+                        conllu_path=test_conllu_path,
+                        output_hdf5_path=out_test,
+                        dataset_name=cfg.dataset.name,
+                        split_name="test",
+                    )
+                    log.info(f"Exported gold geometry for TEST to {out_test}")
+                else:
+                    log.info(f"Gold geometry for TEST already exists at {out_test}; skipping export.")
+    except Exception as e:
+        log.error(f"Gold geometry export failed: {e}", exc_info=True)
     epoch_train_losses = []
     epoch_dev_losses = []
     epoch_dev_primary_metrics = []

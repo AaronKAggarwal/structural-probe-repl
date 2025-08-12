@@ -3,3 +3,7 @@ filter_by_non_punct_len: true
 punctuation_strategy: upos
 spearman_min_len: 5
 spearman_max_len: 50
+gold_export:
+  enable: true
+  # Base directory to save gold HDF5s; per dataset/split files are created beneath this
+  output_dir: data_staging/gold_geometry/${dataset.name}/
