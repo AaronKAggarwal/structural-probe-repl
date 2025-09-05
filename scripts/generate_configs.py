@@ -1,34 +1,68 @@
 # scripts/generate_configs.py
 import argparse
-import os
 from pathlib import Path
+
+def _normalize_lang_key(s: str) -> str:
+    return s.strip().lower().replace(" ", "_")
+
+
+def _discover_from_metadata_csv() -> dict:
+    meta_csv = Path("data/lang_stats/ud_metadata.csv")
+    if not meta_csv.exists():
+        return {}
+    import csv
+    mapping = {}
+    with open(meta_csv, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            slug = (row.get("treebank_slug") or "").strip()
+            lang = (row.get("language") or "").strip()
+            if not slug:
+                continue
+            if lang:
+                mapping[_normalize_lang_key(lang)] = slug
+            # Also allow selecting by slug directly
+            mapping[slug] = slug
+    return mapping
+
 
 def discover_available_languages():
     """
-    Discover available languages by scanning the configs/dataset directory.
-    Returns a dict mapping language names to their dataset config names.
+    Discover available datasets/languages.
+    Priority: metadata CSV if present, else scan configs/dataset.
+    Returns a dict mapping friendly keys (language or slug) to dataset slugs.
     """
+    # Prefer metadata-driven discovery for accuracy
+    mapping = _discover_from_metadata_csv()
+    if mapping:
+        return mapping
+
     dataset_dir = Path("configs/dataset")
     if not dataset_dir.exists():
         return {}
-    
+
     languages = {}
     for dataset_path in dataset_dir.iterdir():
-        if dataset_path.is_dir():
-            dataset_name = dataset_path.name
-            # Look for a config file with the same name as the directory
-            expected_config = dataset_path / f"{dataset_name}.yaml"
-            if expected_config.exists():
-                # Infer language from dataset name (e.g., ud_hindi_hdtb -> hindi, ud_ewt -> english)
-                if "hindi" in dataset_name.lower():
-                    languages["hindi"] = dataset_name
-                elif "ewt" in dataset_name.lower() or "english" in dataset_name.lower():
-                    languages["english"] = dataset_name
-                else:
-                    # For other datasets, use a simplified name
-                    lang_name = dataset_name.replace("ud_", "").split("_")[0]
-                    languages[lang_name] = dataset_name
-    
+        if not dataset_path.is_dir():
+            continue
+        dataset_name = dataset_path.name
+        expected_config = dataset_path / f"{dataset_name}.yaml"
+        if not expected_config.exists():
+            continue
+        # Always allow selecting by slug name
+        languages[dataset_name] = dataset_name
+        # Try to infer a plain language key from UD slug
+        lower = dataset_name.lower()
+        if lower.startswith("ud_") and "-" in dataset_name:
+            try:
+                lang_key = dataset_name.split("_", 1)[1].split("-", 1)[0]
+                languages[_normalize_lang_key(lang_key)] = dataset_name
+            except Exception:
+                pass
+        elif lower.startswith("ud_"):
+            languages[_normalize_lang_key(lower.replace("ud_", ""))] = dataset_name
+        elif "_" in lower:
+            languages[_normalize_lang_key(lower.split("_", 1)[0])] = dataset_name
     return languages
 
 def show_available_languages():
@@ -38,9 +72,11 @@ def show_available_languages():
         print("No language datasets found in configs/dataset/")
         print("Expected structure: configs/dataset/{dataset_name}/{dataset_name}.yaml")
         return
-    
+
     print("Available languages:")
-    for lang, dataset in languages.items():
+    # show in sorted order and de-duplicate values for readability
+    for lang in sorted(languages.keys()):
+        dataset = languages[lang]
         print(f"  {lang}: {dataset}")
     print()
 
@@ -70,14 +106,15 @@ def create_config_files(
 
     embeddings_dir = base_path / "embeddings" / dataset_name / model_name_sanitized
     logging_dir = base_path / "logging" / f"{dataset_name}_{model_name_sanitized}"
-    experiment_dir = base_path / "experiment" / experiment_group / model_name_sanitized
+    # Include dataset_name to avoid collisions when generating for multiple treebanks
+    experiment_dir = base_path / "experiment" / experiment_group / dataset_name / model_name_sanitized
 
     # Create directories if they don't exist
     embeddings_dir.mkdir(parents=True, exist_ok=True)
     logging_dir.mkdir(parents=True, exist_ok=True)
     (experiment_dir / "dist").mkdir(parents=True, exist_ok=True)
     (experiment_dir / "depth").mkdir(parents=True, exist_ok=True)
-    
+
     # Path template for HDF5 files (matches extract_embeddings.py default output)
     hdf5_path_template = f"data_staging/embeddings/{dataset_name}/{model_name_sanitized}/{dataset_name}_conllu_{{split}}_layers-all_align-mean.hdf5"
 
@@ -103,12 +140,12 @@ paths:
         # --- 2. Create Configs for each Probe Type ---
         # Use shortened name "dist" to match existing folder/file conventions
         for probe_type in ["dist", "depth"]:
-            
-            probe_rank = model_dimension if probe_type == "depth" else 128
+            # Use the SAME rank for both probes to avoid capacity confounds.
+            probe_rank = 128
 
             # Use full probe name for human-readable fields (tags, probe config reference)
             probe_full_name = "distance" if probe_type == "dist" else "depth"
-            
+
             # --- 2a. Create Logging Config ---
             log_path = logging_dir / f"{probe_type}_{layer_name}.yaml"
             log_content = f"""
@@ -122,7 +159,7 @@ wandb:
 
             # --- 2b. Create Experiment Config ---
             exp_path = experiment_dir / probe_type / f"{layer_name}.yaml"
-            
+
             depth_overrides = ""
             if probe_type == "depth":
                 depth_overrides = """
@@ -131,7 +168,7 @@ evaluation:
 """.strip()
 
             exp_name_suffix = f"{probe_type.upper()}_R{probe_rank}"
-            
+
             exp_content = f"""
 # Auto-generated by generate_configs.py
 name: {experiment_group}/{model_name_sanitized}/{probe_type}/{layer_name}
@@ -147,6 +184,11 @@ defaults:
   - /runtime: mps
   - /logging: {dataset_name}_{model_name_sanitized}/{probe_type}_{layer_name}
 
+# Per-experiment training cadence (tests and real runs)
+training:
+  eval_every_n_epochs: 1
+  eval_on_train_every_n_epochs: 40
+
 {depth_overrides}
 
 logging:
@@ -154,7 +196,7 @@ logging:
 """.strip()
             with open(exp_path, "w") as f:
                 f.write(exp_content)
-            print(f"Created: {exp_path}")
+        print(f"Created: {exp_path}")
         print("-" * 20)
 
     print(f"\n--- Generation Complete for {num_layers} layers ---")
@@ -170,24 +212,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate a full suite of Hydra config files for a probing experiment sweep."
     )
-    
+
+
     # Show available languages first
     show_available_languages()
-    
+
     # Required language parameter
     parser.add_argument("--language", type=str, required=True,
                         help="Language to generate configs for. Use 'list' to see available languages, or 'custom' for manual specification.")
-    
+
     # Model parameters
     parser.add_argument("--model_hf_name", type=str, default="bert-base-multilingual-cased", help="Hugging Face model identifier.")
     parser.add_argument("--model_name_sanitized", type=str, default="bert-base-multilingual-cased", help="Filesystem-friendly name for the model.")
     parser.add_argument("--model_dimension", type=int, default=768, help="Hidden dimension size of the model embeddings.")
     parser.add_argument("--num_layers", type=int, default=13, help="Total number of layers to generate configs for (embedding layer 0 + N transformer layers).")
-    
+
     # Optional overrides
     parser.add_argument("--dataset_name", type=str, default=None, help="Override dataset name (for custom language or non-standard naming).")
     parser.add_argument("--experiment_group", type=str, default=None, help="Override experiment group name (for custom organization).")
-    
+
     args = parser.parse_args()
 
     # Handle special cases
@@ -197,7 +240,7 @@ if __name__ == "__main__":
     
     # Discover available languages
     available_languages = discover_available_languages()
-    
+
     if args.language == "custom":
         if not args.dataset_name or not args.experiment_group:
             print("ERROR: When using --language custom, you must specify both --dataset_name and --experiment_group")
@@ -210,7 +253,7 @@ if __name__ == "__main__":
             print("Available languages:", list(available_languages.keys()))
             print("Use --language custom with --dataset_name and --experiment_group for manual specification.")
             exit(1)
-        
+
         # Auto-determine dataset and experiment group
         dataset_name = args.dataset_name or available_languages[args.language]
         experiment_group = args.experiment_group or f"baselines_{args.language}"

@@ -3,6 +3,9 @@ filter_by_non_punct_len: true
 punctuation_strategy: upos
 spearman_min_len: 5
 spearman_max_len: 50
+# Content-only evaluation settings
+use_content_only_spearman: true
+collapse_punct: false  # If true, collapse PUNCT/SYM before computing gold labels (defensive)
 gold_export:
   enable: true
   # Base directory to save gold HDF5s; per dataset/split files are created beneath this

@@ -1,7 +1,0 @@
-# configs/dataset/ptb_sd/ptb_tinysample_for_sanity.yaml
-# Points to the tiny 2-sentence CoNLL-X sample file.
-name: "ptb_tinysample_sanity_check"
-paths:
-  conllu_train: "data_staging/ptb_stanford_dependencies_conllx/ptb3-wsj-TINY_SAMPLE.conllx"
-  conllu_dev: "data_staging/ptb_stanford_dependencies_conllx/ptb3-wsj-TINY_SAMPLE.conllx"
-  conllu_test: null

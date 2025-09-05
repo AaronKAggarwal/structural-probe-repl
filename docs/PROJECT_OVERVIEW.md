@@ -17,7 +17,7 @@ This project is directly inspired by and builds upon the seminal work by John He
 *   **Original Code:** [https://github.com/john-hewitt/structural-probes](https://github.com/john-hewitt/structural-probes)
 
 **2.1. Core Hypothesis:**
-Hewitt & Manning hypothesized that the complex syntactic structure of sentences (specifically, dependency parse trees) is implicitly embedded in the *geometry* of the contextual word representation spaces learned by models like ELMo and BERT. They proposed that this structure could be revealed by finding a simple linear transformation of the embedding space.
+Hewitt & Manning hypothesised that the complex syntactic structure of sentences (specifically, dependency parse trees) is implicitly embedded in the *geometry* of the contextual word representation spaces learned by models like ELMo and BERT. They proposed that this structure could be revealed by finding a simple linear transformation of the embedding space.
 
 **2.2. Methodology: The Structural Probe**
 They introduced a "structural probe" with two main components:
@@ -25,7 +25,7 @@ They introduced a "structural probe" with two main components:
 *   **Distance Probe:** This probe learns a linear transformation matrix `B` such that, for any two words `w_i` and `w_j` in a sentence with embeddings `h_i` and `h_j`, the **squared L2 distance** between their transformed embeddings, `||B(h_i - h_j)||^2` (or equivalently `||B h_i - B h_j||^2`), approximates the **tree distance** (number of edges in the dependency parse tree) between `w_i` and `w_j`.
 *   **Depth Probe (Norm Probe):** This probe learns a linear transformation matrix `B` such that the **squared L2 norm** of a transformed word embedding, `||B h_i||^2`, approximates the **depth** of word `w_i` in its dependency parse tree (distance from the root).
 
-The probes are trained by minimizing the L1 loss between the predicted (squared L2) values and the true (non-squared, as per their code) tree-based values.
+The probes are trained by minimising the L1 loss between the predicted (squared L2) values and the true (non-squared, as per their code) tree-based values.
 
 **2.3. Key Findings:**
 *   They demonstrated that such linear transformations `B` (often low-rank, meaning syntax is encoded in a lower-dimensional subspace) can be found for ELMo and BERT representations.

@@ -1,8 +1,11 @@
 # src/torch_probe/utils/gold_labels.py
 from collections import deque
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional, Tuple
 
 import numpy as np
+
+# Content tokens (non-punctuation)
+IGNORE_UPOS = {"PUNCT", "SYM"}
 
 
 def _build_adjacency_list(
@@ -32,7 +35,61 @@ def _build_adjacency_list(
     return adj
 
 
-def calculate_tree_depths(head_indices: List[int]) -> List[int]:
+def collapse_tree_to_content_only(
+    head_indices: List[int], 
+    upos_tags: List[str]
+) -> Tuple[List[int], List[int]]:
+    """
+    Collapses a dependency tree by removing PUNCT/SYM tokens and recomputing head relations.
+    
+    Args:
+        head_indices: Original head indices (0-indexed, -1 for root)
+        upos_tags: UPOS tags for each token
+        
+    Returns:
+        Tuple of (collapsed_head_indices, content_indices_mapping)
+        where content_indices_mapping maps new indices to original indices
+    """
+    # Find content token indices
+    content_indices = [i for i, tag in enumerate(upos_tags) if tag not in IGNORE_UPOS]
+    
+    if not content_indices:
+        return [], []
+    
+    # Create mapping from original index to new index
+    old_to_new = {old_idx: new_idx for new_idx, old_idx in enumerate(content_indices)}
+    
+    # Build collapsed head indices
+    collapsed_heads = []
+    for content_idx in content_indices:
+        original_head = head_indices[content_idx]
+        
+        if original_head == -1:
+            # Root remains root
+            collapsed_heads.append(-1)
+        elif original_head in old_to_new:
+            # Head is also a content token
+            collapsed_heads.append(old_to_new[original_head])
+        else:
+            # Head is punctuation - find first content ancestor
+            ancestor = original_head
+            while ancestor != -1 and ancestor not in old_to_new:
+                ancestor = head_indices[ancestor] if ancestor < len(head_indices) else -1
+            
+            if ancestor == -1:
+                # No content ancestor found, make this a root
+                collapsed_heads.append(-1)
+            else:
+                collapsed_heads.append(old_to_new[ancestor])
+    
+    return collapsed_heads, content_indices
+
+
+def calculate_tree_depths(
+    head_indices: List[int], 
+    upos_tags: Optional[List[str]] = None, 
+    collapse_punct: bool = False
+) -> List[int]:
     """
     Calculates the depth of each token in a dependency tree.
     Depth of root is 0.
@@ -40,10 +97,21 @@ def calculate_tree_depths(head_indices: List[int]) -> List[int]:
     Args:
         head_indices: List of 0-indexed head indices. Root token's head is -1
                       or points to itself (if multiple roots, first one found is used).
+        upos_tags: UPOS tags for each token (required if collapse_punct=True)
+        collapse_punct: If True, collapse PUNCT/SYM before computing depths
 
     Returns:
-        List of depths for each token.
+        List of depths for each token. If collapse_punct=True, returns depths
+        for content tokens only, in the same order as the content indices.
     """
+    if collapse_punct:
+        if upos_tags is None:
+            raise ValueError("upos_tags required when collapse_punct=True")
+        collapsed_heads, content_indices = collapse_tree_to_content_only(head_indices, upos_tags)
+        if not collapsed_heads:
+            return []
+        return calculate_tree_depths(collapsed_heads, upos_tags=None, collapse_punct=False)
+    
     num_tokens = len(head_indices)
     if num_tokens == 0:
         return []
@@ -81,16 +149,31 @@ def calculate_tree_depths(head_indices: List[int]) -> List[int]:
     return depths
 
 
-def calculate_tree_distances(head_indices: List[int]) -> np.ndarray:
+def calculate_tree_distances(
+    head_indices: List[int], 
+    upos_tags: Optional[List[str]] = None, 
+    collapse_punct: bool = False
+) -> np.ndarray:
     """
     Calculates pairwise shortest path distances between all tokens in a dependency tree.
 
     Args:
         head_indices: List of 0-indexed head indices. Root token's head is -1.
+        upos_tags: UPOS tags for each token (required if collapse_punct=True)
+        collapse_punct: If True, collapse PUNCT/SYM before computing distances
 
     Returns:
         A NumPy array of shape (num_tokens, num_tokens) with distances.
+        If collapse_punct=True, returns distances for content tokens only.
     """
+    if collapse_punct:
+        if upos_tags is None:
+            raise ValueError("upos_tags required when collapse_punct=True")
+        collapsed_heads, content_indices = collapse_tree_to_content_only(head_indices, upos_tags)
+        if not collapsed_heads:
+            return np.empty((0, 0), dtype=int)
+        return calculate_tree_distances(collapsed_heads, upos_tags=None, collapse_punct=False)
+    
     num_tokens = len(head_indices)
     if num_tokens == 0:
         return np.empty((0, 0), dtype=int)

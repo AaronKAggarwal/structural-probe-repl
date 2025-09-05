@@ -3,7 +3,8 @@ wandb:
   enable: true
   project: "structural-probes-modern"
   entity: "aggarwal-k-aaron"
+  group: "stage3-full-probe-test"  # Groups all runs from this training session
   
   # These will be overridden by the specific experiment file
   name: "default_run_${now:%H-%M-%S}" 
-  tags: ["default"]
+  tags: ["stage3", "probe-test", "L7", "5epochs"]

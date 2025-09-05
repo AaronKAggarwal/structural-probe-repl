@@ -216,6 +216,14 @@ def train(cfg: DictConfig) -> Optional[float]:
                 if notes_str is not None and not isinstance(notes_str, str):
                     notes_str = str(notes_str)
 
+                # Forward group and tags to W&B
+                group_str = cfg.logging.wandb.get("group", None)
+                tags_list = cfg.logging.wandb.get("tags", [])
+                try:
+                    tags_list = list(tags_list) if tags_list is not None else None
+                except Exception:
+                    tags_list = None
+
                 wandb.init(
                     project=cfg.logging.wandb.project,
                     entity=cfg.logging.wandb.get("entity"),
@@ -227,6 +235,8 @@ def train(cfg: DictConfig) -> Optional[float]:
                     dir=str(output_dir),
                     resume="allow",
                     id=wandb.util.generate_id(),
+                    group=group_str,
+                    tags=tags_list,
                 )
                 log.info(
                     f"Weights & Biases initialized for run: {wandb.run.name} (ID: {wandb.run.id})"
@@ -262,7 +272,8 @@ def train(cfg: DictConfig) -> Optional[float]:
         embedding_layer_index=cfg.embeddings.layer_index,
         probe_task_type=cfg.probe.type,
         embedding_dim=cfg.embeddings.get("dimension"),
-        preload=cfg.dataset.get("preload", True)
+        preload=cfg.dataset.get("preload", True),
+        collapse_punct=False
     )
     dev_dataset = ProbeDataset(
         conllu_filepath=str(dev_conllu_path),
@@ -270,7 +281,8 @@ def train(cfg: DictConfig) -> Optional[float]:
         embedding_layer_index=cfg.embeddings.layer_index,
         probe_task_type=cfg.probe.type,
         embedding_dim=train_dataset.embedding_dim,
-        preload=cfg.dataset.get("preload", True)
+        preload=cfg.dataset.get("preload", True),
+        collapse_punct=False
     )
 
     actual_embedding_dim = train_dataset.embedding_dim
@@ -467,10 +479,16 @@ def train(cfg: DictConfig) -> Optional[float]:
             embeddings_b = batch["embeddings_batch"].to(device, non_blocking=True)
             labels_b = batch["labels_batch"].to(device, non_blocking=True)
             lengths_b = batch["lengths_batch"]
+            content_mask_b = batch.get("content_token_mask", None)
 
             optimizer.zero_grad(set_to_none=True)
             predictions_b = probe_model(embeddings_b)
-            loss = loss_fn(predictions_b, labels_b, lengths_b.to(device))
+            
+            # Pass content mask to loss function if available
+            if content_mask_b is not None:
+                loss = loss_fn(predictions_b, labels_b, lengths_b.to(device), content_mask_b.to(device))
+            else:
+                loss = loss_fn(predictions_b, labels_b, lengths_b.to(device))
 
             loss.backward()
             if (
@@ -555,6 +573,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 punctuation_strategy=cfg.evaluation.get("punctuation_strategy", "upos"),
                 spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
                 spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
+                use_content_only_spearman=cfg.evaluation.get("use_content_only_spearman", True),
             )
 
             # Filter for summary metrics (scalar values) for concise logging
@@ -563,9 +582,10 @@ def train(cfg: DictConfig) -> Optional[float]:
             scalar_metric_keys_to_log = [
                 "loss",
                 "spearmanr_hm",
+                "spearmanr_content_only",
                 "uuas",
                 "root_acc",
-            ]  # Define expected scalar keys
+            ]  # Include content-only Spearman as canonical
 
             for k, v_met in dev_metrics_full.items():
                 if k in scalar_metric_keys_to_log:
@@ -612,6 +632,11 @@ def train(cfg: DictConfig) -> Optional[float]:
 
             for k, v_met in dev_summary_metrics.items():  # Log summary scalars to W&B
                 wandb_log_data_epoch[f"dev/{k}"] = v_met
+            # Prefer content-only Spearman as canonical when available
+            if "spearmanr_content_only" in dev_summary_metrics:
+                wandb_log_data_epoch["dev/spearmanr"] = dev_summary_metrics["spearmanr_content_only"]
+            elif "spearmanr_hm" in dev_summary_metrics:
+                wandb_log_data_epoch["dev/spearmanr"] = dev_summary_metrics["spearmanr_hm"]
 
             eval_freq = cfg.training.get("eval_on_train_every_n_epochs", 1)
             # Check if we should run the evaluation in this epoch
@@ -639,6 +664,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                     ),
                     spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
                     spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
+                    use_content_only_spearman=cfg.evaluation.get("use_content_only_spearman", True),
                 )
 
                 train_eval_summary_metrics = {}
@@ -915,6 +941,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 probe_task_type=cfg.probe.type,
                 embedding_dim=actual_embedding_dim,
                 preload=False,
+                collapse_punct=False
             )
             test_loader = DataLoader(
                 test_dataset,
@@ -935,6 +962,7 @@ def train(cfg: DictConfig) -> Optional[float]:
                 punctuation_strategy=cfg.evaluation.get("punctuation_strategy", "upos"),
                 spearman_min_len=cfg.evaluation.get("spearman_min_len", 5),
                 spearman_max_len=cfg.evaluation.get("spearman_max_len", 50),
+                use_content_only_spearman=cfg.evaluation.get("use_content_only_spearman", True),
             )
 
             test_summary_metrics = {}

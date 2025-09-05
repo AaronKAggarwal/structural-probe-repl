@@ -128,16 +128,24 @@ def extract_embeddings_main(cfg: DictConfig) -> None:
             hdf5_file.attrs["layers_extracted_indices"] = json.dumps(layers_to_extract_indices)
             hdf5_file.attrs["original_conll_file"] = str(conll_abs_path)
 
-            # Optional, backward-compatible tokenization metadata containers
+            # Optional, backward-compatible tokenization metadata containers    
             save_tok_map = bool(cfg.job.get("save_tokenization_map", False))
             save_input_ids = bool(cfg.job.get("save_input_ids", False))
             word_ids_group = hdf5_file.create_group("word_ids") if save_tok_map else None
             input_ids_group = hdf5_file.create_group("input_ids") if save_input_ids else None
 
             total_sentences_processed = 0
+            sentences_skipped_length = 0
             for sent_idx, sentence_data in enumerate(tqdm(parsed_sentences, desc=f"Extracting for {split_name}")):
                 original_words: List[str] = sentence_data["tokens"]
                 if not original_words:
+                    continue
+
+                # Pre-check if sentence would be truncated (for research validity)
+                tokenized_check = tokenizer(original_words, is_split_into_words=True, truncation=False)
+                if len(tokenized_check['input_ids']) > tokenizer.model_max_length:
+                    sentences_skipped_length += 1
+                    log.debug(f"Skipping sentence {sent_idx} in {split_name}: length {len(tokenized_check['input_ids'])} > {tokenizer.model_max_length} tokens")
                     continue
 
                 tokenized_output = tokenizer(original_words, is_split_into_words=True, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
@@ -179,7 +187,10 @@ def extract_embeddings_main(cfg: DictConfig) -> None:
                     input_ids_group.create_dataset(str(sent_idx), data=input_ids_np)
                 total_sentences_processed += 1
 
-            log.info(f"Finished processing '{split_name}'. Saved {total_sentences_processed}/{len(parsed_sentences)} sentences to {hdf5_output_path}.")
+            if sentences_skipped_length > 0:
+                log.info(f"Finished processing '{split_name}'. Saved {total_sentences_processed}/{len(parsed_sentences)} sentences to {hdf5_output_path}. Skipped {sentences_skipped_length} sentences due to length > {tokenizer.model_max_length} tokens.")
+            else:
+                log.info(f"Finished processing '{split_name}'. Saved {total_sentences_processed}/{len(parsed_sentences)} sentences to {hdf5_output_path}.")
 
     log.info("All specified CoNLL files processed.")
 

@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm # Import tqdm
+from tqdm import tqdm  # Import tqdm
 
 from .utils.conllu_reader import SentenceData, read_conll_file
 from .utils.embedding_loader import load_embeddings_for_sentence
@@ -23,6 +23,7 @@ class ProbeDataset(Dataset):
         probe_task_type: str,
         embedding_dim: Optional[int] = None,
         preload: bool = True,  # <-- Add preload parameter
+        collapse_punct: bool = False,  # <-- Add collapse_punct parameter
     ):
         super().__init__()
 
@@ -35,6 +36,7 @@ class ProbeDataset(Dataset):
         self.probe_task_type = probe_task_type
         self.embedding_dim = embedding_dim
         self.preload = preload # Store the preload choice
+        self.collapse_punct = collapse_punct  # Store the collapse_punct choice
 
         self.parsed_sentences: List[SentenceData] = read_conll_file(conllu_filepath)
         if not self.parsed_sentences:
@@ -50,21 +52,32 @@ class ProbeDataset(Dataset):
             if len(self.parsed_sentences) > 0:
                 try:
                     with h5py.File(self.hdf5_filepath, "r") as hf:
+                        numeric_keys = sorted(
+                            [int(k) for k in hf.keys() if k.isdigit()]
+                        )
+                        if not numeric_keys:
+                            raise ValueError(
+                                f"No numeric sentence keys found in HDF5 file {self.hdf5_filepath} to infer embedding dimension."
+                            )
+                        sample_key = str(numeric_keys[0])
                         first_sent_emb = load_embeddings_for_sentence(
-                            hf, "0", self.embedding_layer_index
+                            hf, sample_key, self.embedding_layer_index
                         )
                 except Exception as e:
-                    raise IOError(f"Could not open HDF5 file {hdf5_filepath}: {e}")
+                    raise IOError(f"Could not open HDF5 file {self.hdf5_filepath}: {e}")
 
                 if first_sent_emb is not None and first_sent_emb.ndim == 2:
                     self.embedding_dim = first_sent_emb.shape[1]
                 else:
                     raise ValueError(
-                        f"Could not infer embedding dimension from HDF5 file {hdf5_filepath}. Please provide embedding_dim."
+                        f"Could not infer embedding dimension from HDF5 file {self.hdf5_filepath}. Please provide embedding_dim."
                     )
             else:
                 raise ValueError("Cannot infer embedding dimension from empty dataset.")
-        
+
+        # Filter sentences to only include those with embeddings (handle extraction filtering)
+        self._filter_sentences_with_embeddings()
+
         self.gold_labels: List[np.ndarray] = self._calculate_all_gold_labels()
 
         self.preloaded_data: Optional[List[Dict[str, Any]]] = None
@@ -77,6 +90,29 @@ class ProbeDataset(Dataset):
                     self.preloaded_data.append(self._get_item_data(i, hdf5_file_object))
             print("Pre-loading complete.")
 
+    def _filter_sentences_with_embeddings(self) -> None:
+        """Filter parsed_sentences to only include those with embeddings in HDF5."""
+        with h5py.File(self.hdf5_filepath, "r") as hdf5_file:
+            available_keys = set(k for k in hdf5_file.keys() if k.isdigit())
+
+        original_count = len(self.parsed_sentences)
+        filtered_sentences = []
+        self.original_indices = []  # Track original indices for HDF5 lookup
+
+        for i, sentence in enumerate(self.parsed_sentences):
+            sentence_key = str(i)
+            if sentence_key in available_keys:
+                filtered_sentences.append(sentence)
+                self.original_indices.append(i)
+
+        filtered_count = len(filtered_sentences)
+        skipped_count = original_count - filtered_count
+
+        if skipped_count > 0:
+            print(f"Warning: Filtered out {skipped_count} sentences missing from HDF5 embeddings (likely filtered during extraction)")
+
+        self.parsed_sentences = filtered_sentences
+
     def _calculate_all_gold_labels(self) -> List[np.ndarray]:
         """Helper to compute all gold labels during initialization."""
         labels = []
@@ -85,18 +121,29 @@ class ProbeDataset(Dataset):
                 raise ValueError(
                     f"Sentence {i} from {self.conllu_filepath} is missing 'head_indices'."
                 )
+            upos_tags = sent_data.get("upos_tags", None)
             if self.probe_task_type == "distance":
-                distances = calculate_tree_distances(sent_data["head_indices"])
+                distances = calculate_tree_distances(
+                    sent_data["head_indices"],
+                    upos_tags=upos_tags,
+                    collapse_punct=self.collapse_punct
+                )
                 labels.append(distances.astype(np.float32))
             elif self.probe_task_type == "depth":
-                depths = calculate_tree_depths(sent_data["head_indices"])
+                depths = calculate_tree_depths(
+                    sent_data["head_indices"],
+                    upos_tags=upos_tags,
+                    collapse_punct=self.collapse_punct
+                )
                 labels.append(np.array(depths, dtype=np.float32))
         return labels
 
     def _get_item_data(self, idx: int, hdf5_file_object: h5py.File) -> Dict[str, Any]:
         """Core logic to retrieve a single item, assuming an open HDF5 file."""
         sentence_data = self.parsed_sentences[idx]
-        sentence_key = str(idx)
+        # Use original index for HDF5 lookup if sentences were filtered
+        original_idx = self.original_indices[idx] if hasattr(self, 'original_indices') else idx
+        sentence_key = str(original_idx)
 
         embeddings_np = load_embeddings_for_sentence(
             hdf5_file_object, sentence_key, self.embedding_layer_index
@@ -180,30 +227,44 @@ def collate_probe_batch(batch: List[Dict[str, Any]]) -> Dict[str, Any]:
     )
     max_len = padded_embeddings.shape[1]
 
-    first_label_shape_dim = gold_labels_list[0].ndim
-    if first_label_shape_dim == 1:  # Depth task
-        padded_labels = torch.full((len(batch), max_len), -1.0, dtype=torch.float32)
-        for i, lbl in enumerate(gold_labels_list):
-            padded_labels[i, : lengths[i]] = lbl
-    elif first_label_shape_dim == 2:  # Distance task
-        padded_labels = torch.full(
-            (len(batch), max_len, max_len), -1.0, dtype=torch.float32
-        )
-        for i, lbl_matrix in enumerate(gold_labels_list):
-            seq_len = lengths[i]
-            padded_labels[i, :seq_len, :seq_len] = lbl_matrix
-    else:
-        raise ValueError(f"Unsupported gold_label shape: {gold_labels_list[0].shape}")
-
+    # Materialize token/tag batches for return payload
     tokens_batch = [item["tokens"] for item in batch]
     head_indices_batch = [item["head_indices"] for item in batch]
     upos_tags_batch = [item["upos_tags"] for item in batch]
     xpos_tags_batch = [item["xpos_tags"] for item in batch]
 
+    first_label_shape_dim = gold_labels_list[0].ndim
+    if first_label_shape_dim == 1:  # Depth task (vector)
+        # Pad to original lengths; gold labels are full-length depths
+        padded_labels = torch.full((len(batch), max_len), -1.0, dtype=torch.float32)
+        for i, lbl in enumerate(gold_labels_list):
+            seq_len = lengths[i]
+            padded_labels[i, : seq_len] = torch.as_tensor(lbl[: seq_len], dtype=torch.float32)
+    elif first_label_shape_dim == 2:  # Distance task (matrix)
+        # Pad to original lengths; gold labels are full-length distances
+        padded_labels = torch.full((len(batch), max_len, max_len), -1.0, dtype=torch.float32)
+        for i, lbl_matrix in enumerate(gold_labels_list):
+            seq_len = lengths[i]
+            lbl_t = torch.as_tensor(lbl_matrix[: seq_len, : seq_len], dtype=torch.float32)
+            padded_labels[i, : seq_len, : seq_len] = lbl_t
+    else:
+        raise ValueError(f"Unsupported gold_label shape: {gold_labels_list[0].shape}")
+
+    # tokens_batch, head_indices_batch, upos_tags_batch, xpos_tags_batch are already created above
+
+    # Create content_token_mask (True for non-PUNCT/SYM tokens) for loss masking
+    IGNORE_UPOS = {"PUNCT", "SYM"}
+    content_token_mask = torch.zeros((len(batch), max_len), dtype=torch.bool)
+    for i, upos_tags in enumerate(upos_tags_batch):
+        seq_len = lengths[i]
+        for j in range(seq_len):
+            content_token_mask[i, j] = upos_tags[j] not in IGNORE_UPOS
+
     return {
         "embeddings_batch": padded_embeddings,
         "labels_batch": padded_labels,
         "lengths_batch": lengths,
+        "content_token_mask": content_token_mask,
         "tokens_batch": tokens_batch,
         "head_indices_batch": head_indices_batch,
         "upos_tags_batch": upos_tags_batch,
