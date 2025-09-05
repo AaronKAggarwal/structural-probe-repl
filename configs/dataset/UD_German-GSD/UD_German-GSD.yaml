@@ -1,0 +1,6 @@
+name: UD_German-GSD
+preload: true
+paths:
+  conllu_train: data/ud/UD_German-GSD/train.conllu
+  conllu_dev:   data/ud/UD_German-GSD/dev.conllu
+  conllu_test:  data/ud/UD_German-GSD/test.conllu

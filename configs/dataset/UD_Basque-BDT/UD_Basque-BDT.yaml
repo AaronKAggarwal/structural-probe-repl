@@ -1,0 +1,6 @@
+name: UD_Basque-BDT
+preload: true
+paths:
+  conllu_train: data/ud/UD_Basque-BDT/train.conllu
+  conllu_dev:   data/ud/UD_Basque-BDT/dev.conllu
+  conllu_test:  data/ud/UD_Basque-BDT/test.conllu

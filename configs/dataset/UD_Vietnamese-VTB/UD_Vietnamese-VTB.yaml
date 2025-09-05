@@ -1,0 +1,6 @@
+name: UD_Vietnamese-VTB
+preload: true
+paths:
+  conllu_train: data/ud/UD_Vietnamese-VTB/train.conllu
+  conllu_dev:   data/ud/UD_Vietnamese-VTB/dev.conllu
+  conllu_test:  data/ud/UD_Vietnamese-VTB/test.conllu

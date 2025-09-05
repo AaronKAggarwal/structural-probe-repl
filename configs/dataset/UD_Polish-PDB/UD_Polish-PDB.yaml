@@ -1,0 +1,6 @@
+name: UD_Polish-PDB
+preload: true
+paths:
+  conllu_train: data/ud/UD_Polish-PDB/train.conllu
+  conllu_dev:   data/ud/UD_Polish-PDB/dev.conllu
+  conllu_test:  data/ud/UD_Polish-PDB/test.conllu

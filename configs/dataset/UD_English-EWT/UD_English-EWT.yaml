@@ -1,0 +1,6 @@
+name: UD_English-EWT
+preload: true
+paths:
+  conllu_train: data/ud/UD_English-EWT/train.conllu
+  conllu_dev:   data/ud/UD_English-EWT/dev.conllu
+  conllu_test:  data/ud/UD_English-EWT/test.conllu

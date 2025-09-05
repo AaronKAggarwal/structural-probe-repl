@@ -1,0 +1,6 @@
+name: UD_Hungarian-Szeged
+preload: true
+paths:
+  conllu_train: data/ud/UD_Hungarian-Szeged/train.conllu
+  conllu_dev:   data/ud/UD_Hungarian-Szeged/dev.conllu
+  conllu_test:  data/ud/UD_Hungarian-Szeged/test.conllu

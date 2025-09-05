@@ -1,0 +1,6 @@
+name: UD_Czech-PDTC
+preload: true
+paths:
+  conllu_train: data/ud/UD_Czech-PDTC/train.conllu
+  conllu_dev:   data/ud/UD_Czech-PDTC/dev.conllu
+  conllu_test:  data/ud/UD_Czech-PDTC/test.conllu

@@ -1,0 +1,6 @@
+name: UD_Hebrew-HTB
+preload: true
+paths:
+  conllu_train: data/ud/UD_Hebrew-HTB/train.conllu
+  conllu_dev:   data/ud/UD_Hebrew-HTB/dev.conllu
+  conllu_test:  data/ud/UD_Hebrew-HTB/test.conllu

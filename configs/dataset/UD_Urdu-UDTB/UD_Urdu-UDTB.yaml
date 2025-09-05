@@ -1,0 +1,6 @@
+name: UD_Urdu-UDTB
+preload: true
+paths:
+  conllu_train: data/ud/UD_Urdu-UDTB/train.conllu
+  conllu_dev:   data/ud/UD_Urdu-UDTB/dev.conllu
+  conllu_test:  data/ud/UD_Urdu-UDTB/test.conllu

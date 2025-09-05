@@ -1,0 +1,6 @@
+name: UD_Hindi-HDTB
+preload: true
+paths:
+  conllu_train: data/ud/UD_Hindi-HDTB/train.conllu
+  conllu_dev:   data/ud/UD_Hindi-HDTB/dev.conllu
+  conllu_test:  data/ud/UD_Hindi-HDTB/test.conllu

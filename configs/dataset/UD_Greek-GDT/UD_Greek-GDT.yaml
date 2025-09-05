@@ -1,0 +1,6 @@
+name: UD_Greek-GDT
+preload: true
+paths:
+  conllu_train: data/ud/UD_Greek-GDT/train.conllu
+  conllu_dev:   data/ud/UD_Greek-GDT/dev.conllu
+  conllu_test:  data/ud/UD_Greek-GDT/test.conllu

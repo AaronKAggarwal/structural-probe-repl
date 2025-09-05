@@ -1,0 +1,6 @@
+name: UD_Persian-Seraji
+preload: true
+paths:
+  conllu_train: data/ud/UD_Persian-Seraji/train.conllu
+  conllu_dev:   data/ud/UD_Persian-Seraji/dev.conllu
+  conllu_test:  data/ud/UD_Persian-Seraji/test.conllu
