@@ -284,3 +284,14 @@ src/legacy/structural_probe/example/results/
 ./backups/2025-08-15_16-08-46_embeddings_old_naming/embeddings/UD_Russian-SynTagRus-UD_Russian-SynTagRus/bert-base-multilingual-cased/UD_Russian-SynTagRus-UD_Russian-SynTagRus_conllu_train_layers-all_align-mean.hdf5
 ./backups/2025-08-15_16-08-46_embeddings_old_naming/embeddings/UD_Russian-SynTagRus-UD_Russian-SynTagRus/bert-base-multilingual-cased/UD_Russian-SynTagRus-UD_Russian-SynTagRus_conllu_dev_layers-all_align-mean.hdf5
 ./backups/2025-08-15_16-08-46_embeddings_old_naming/embeddings/UD_Russian-SynTagRus-UD_Russian-SynTagRus/bert-base-multilingual-cased/UD_Russian-SynTagRus-UD_Russian-SynTagRus_conllu_test_layers-all_align-mean.hdf5
+data/
+backups/
+outputs_backup/
+env/models/
+*.ipynb_checkpoints
+*.log
+*.pt
+*.ckpt
+*.bin
+*.h5
+*.onnx
