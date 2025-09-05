@@ -22,7 +22,7 @@ def robust_align_subword_embeddings(
     from the Hugging Face tokenizer.
 
     Args:
-        subword_embeddings: Tensor of subword embeddings (num_subwords, dim),
+        subword_embeddings: Tensor of subword embeddings (num_subwords, dim) or (num_subwords, num_layers, dim),
                             INCLUDING embeddings for special tokens like [CLS], [SEP].
         word_ids: List mapping each subword token index to its original word index,
                   or None for special tokens.
@@ -30,10 +30,22 @@ def robust_align_subword_embeddings(
         alignment_strategy: "mean", "first".
 
     Returns:
-        Tensor of word-level embeddings (num_original_words, dim).
+        Tensor of word-level embeddings (num_original_words, dim) or (num_original_words, num_layers, dim).
     """
     if subword_embeddings.numel() == 0:
         return torch.empty((0, 0), device=subword_embeddings.device)
+
+    # Determine the shape for zero vectors based on input dimensionality
+    if subword_embeddings.dim() == 2:
+        # 2D: (num_subwords, dim)
+        zero_shape = (subword_embeddings.size(1),)
+        empty_shape = (0, subword_embeddings.size(1))
+    elif subword_embeddings.dim() == 3:
+        # 3D: (num_subwords, num_layers, dim)
+        zero_shape = (subword_embeddings.size(1), subword_embeddings.size(2))
+        empty_shape = (0, subword_embeddings.size(1), subword_embeddings.size(2))
+    else:
+        raise ValueError(f"Unsupported subword_embeddings shape: {subword_embeddings.shape}")
 
     word_to_subword_indices: Dict[int, List[int]] = defaultdict(list)
     for subword_idx, word_idx in enumerate(word_ids):
@@ -56,7 +68,7 @@ def robust_align_subword_embeddings(
             if not valid_sub_indices:
                 log.warning(f"Word {i} had no valid subword indices. Appending zero vector.")
                 aligned_embeddings_list.append(
-                    torch.zeros(subword_embeddings.size(1), device=subword_embeddings.device)
+                    torch.zeros(zero_shape, device=subword_embeddings.device)
                 )
                 continue
 
@@ -72,10 +84,10 @@ def robust_align_subword_embeddings(
                 f"Word at index {i} has no corresponding subwords. Appending zero vector."
             )
             aligned_embeddings_list.append(
-                torch.zeros(subword_embeddings.size(1), device=subword_embeddings.device)
+                torch.zeros(zero_shape, device=subword_embeddings.device)
             )
 
     if not aligned_embeddings_list:
-        return torch.empty((0, subword_embeddings.size(1)), device=subword_embeddings.device)
+        return torch.empty(empty_shape, device=subword_embeddings.device)
 
     return torch.stack(aligned_embeddings_list)
