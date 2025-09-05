@@ -295,3 +295,22 @@ env/models/
 *.bin
 *.h5
 *.onnx
+# heavy artefacts
+data/
+backups/
+outputs_backup/
+env/models/
+wandb/
+*.pt
+*.ckpt
+*.bin
+*.h5
+*.onnx
+*.tar
+*.tar.gz
+*.zip
+*.parquet
+*.feather
+*.pkl
+*.npz
+*.npy
