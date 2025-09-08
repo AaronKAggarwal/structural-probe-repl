@@ -1,0 +1,24 @@
+language_slug,wiki_code,chosen_date,source,size_bytes,size_mb,wiki_size_log2_mb,dump_url,status
+UD_Arabic-PADT,ar,20181101,archive_org,801447180,764.3195915222168,9.578032200672585,https://archive.org/download/arwiki-20181101/arwiki-20181101-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Basque-BDT,eu,20181001,archive_org,180725819,172.35357189178467,7.429227387506113,https://archive.org/download/euwiki-20181001/euwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Bulgarian-BTB,bg,20181001,archive_org,335431255,319.8921728134155,8.321441882505214,https://archive.org/download/bgwiki-20181001/bgwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Chinese-GSD,zh,20181001,archive_org,1764674582,1682.924825668335,10.716755019227923,https://archive.org/download/zhwiki-20181001/zhwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Czech-PDTC,cs,20181001,archive_org,771119067,735.3964490890503,9.522378400183236,https://archive.org/download/cswiki-20181001/cswiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_English-EWT,en,20181101,archive_org,16512687556,15747.726016998291,13.942855896996711,https://archive.org/download/enwiki-20181101/enwiki-20181101-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Finnish-TDT,fi,20181001,archive_org,670699920,639.6292877197266,9.32109218906926,https://archive.org/download/fiwiki-20181001/fiwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_French-GSD,fr,20181001,archive_org,4308342684,4108.755764007568,12.004485859867716,https://archive.org/download/frwiki-20181001/frwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_German-GSD,de,20181001,archive_org,5190092667,4949.658076286316,12.273113151534321,https://archive.org/download/dewiki-20181001/dewiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Greek-GDT,el,20181001,archive_org,326205511,311.09381771087646,8.281205914616535,https://archive.org/download/elwiki-20181001/elwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Hebrew-HTB,he,20181001,archive_org,578094175,551.3135671615601,9.106729294624504,https://archive.org/download/hewiki-20181001/hewiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Hindi-HDTB,hi,20181001,archive_org,138305361,131.89827060699463,7.043281838495576,https://archive.org/download/hiwiki-20181001/hiwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Hungarian-Szeged,hu,20181001,archive_org,825542552,787.2987289428711,9.620767338837325,https://archive.org/download/huwiki-20181001/huwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Indonesian-GSD,id,20181001,archive_org,527054766,502.63859367370605,8.973377638478446,https://archive.org/download/idwiki-20181001/idwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Japanese-GSD,ja,20181001,archive_org,2864356232,2731.662971496582,11.415563781707217,https://archive.org/download/jawiki-20181001/jawiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Korean-GSD,ko,20181001,archive_org,626417189,597.3979845046997,9.222548560081648,https://archive.org/download/kowiki-20181001/kowiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Persian-Seraji,fa,20181001,archive_org,701926428,669.4092063903809,9.386744582332499,https://archive.org/download/fawiki-20181001/fawiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Polish-PDB,pl,20181001,archive_org,1845836269,1760.326642036438,10.781627441434814,https://archive.org/download/plwiki-20181001/plwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Russian-SynTagRus,ru,20181001,archive_org,3643734198,3474.9357204437256,11.762770575691102,https://archive.org/download/ruwiki-20181001/ruwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Spanish-AnCora,es,20181001,archive_org,3044849039,2903.7943258285522,11.503723556310014,https://archive.org/download/eswiki-20181001/eswiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Turkish-IMST,tr,20181001,archive_org,509119659,485.5343427658081,8.923429533587337,https://archive.org/download/trwiki-20181001/trwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Urdu-UDTB,ur,20181001,archive_org,128810583,122.84334468841553,6.940675888377469,https://archive.org/download/urwiki-20181001/urwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org
+UD_Vietnamese-VTB,vi,20181001,archive_org,626165158,597.1576290130615,9.221967993255637,https://archive.org/download/viwiki-20181001/viwiki-20181001-pages-articles-multistream.xml.bz2,✓ Archive.org

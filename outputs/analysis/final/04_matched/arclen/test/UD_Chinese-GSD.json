@@ -1,0 +1,579 @@
+{
+  "split": "test",
+  "bin_edges": [
+    1.0,
+    1.6666666666666667,
+    2.0,
+    2.3529411764705883,
+    2.8,
+    12.0
+  ],
+  "bin_labels": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "Q5"
+  ],
+  "target_probs": [
+    0.18010187273510556,
+    0.1637059375079192,
+    0.2556954968196447,
+    0.19903195560173337,
+    0.20146473733559717
+  ],
+  "per_probe_layer": {
+    "dist_L5": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "dist_L6": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "dist_L7": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "dist_L8": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "dist_L9": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "dist_L10": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "uuas": "full_length"
+      }
+    },
+    "depth_L5": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L6": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L7": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L8": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L9": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L10": {
+      "T_raw": 500,
+      "T_prime": 326,
+      "retention_ratio": 0.652,
+      "js_to_target": 0.04746564962509823,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 3,
+      "bins_truncated": [
+        0,
+        1,
+        2
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        9,
+        31,
+        85,
+        105,
+        270
+      ],
+      "requested_counts": [
+        90,
+        82,
+        128,
+        100,
+        101
+      ],
+      "target_counts": [
+        9,
+        31,
+        85,
+        100,
+        101
+      ],
+      "effective_probs": [
+        0.027607361963190184,
+        0.0950920245398773,
+        0.2607361963190184,
+        0.3067484662576687,
+        0.3098159509202454
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    }
+  }
+}

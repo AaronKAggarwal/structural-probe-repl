@@ -1,0 +1,591 @@
+{
+  "split": "test",
+  "bin_edges": [
+    1.0,
+    1.6666666666666667,
+    2.0,
+    2.3529411764705883,
+    2.8,
+    12.0
+  ],
+  "bin_labels": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "Q5"
+  ],
+  "target_probs": [
+    0.18010187273510556,
+    0.1637059375079192,
+    0.2556954968196447,
+    0.19903195560173337,
+    0.20146473733559717
+  ],
+  "per_probe_layer": {
+    "dist_L5": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "dist_L6": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "dist_L7": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "dist_L8": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "dist_L9": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "dist_L10": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "uuas": "by_mask_fallback"
+      }
+    },
+    "depth_L5": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L6": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L7": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L8": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L9": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    },
+    "depth_L10": {
+      "T_raw": 1061,
+      "T_prime": 731,
+      "retention_ratio": 0.6889726672950047,
+      "js_to_target": 0.010232000727386744,
+      "duplication_95p": 1.0,
+      "bins_truncated_count": 4,
+      "bins_truncated": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "retention_low_flag": true,
+      "small_sample_flag": false,
+      "valid_bin_counts": [
+        521,
+        137,
+        201,
+        107,
+        95
+      ],
+      "requested_counts": [
+        191,
+        174,
+        271,
+        211,
+        214
+      ],
+      "target_counts": [
+        191,
+        137,
+        201,
+        107,
+        95
+      ],
+      "effective_probs": [
+        0.2612859097127223,
+        0.18741450068399454,
+        0.2749658002735978,
+        0.146374829001368,
+        0.12995896032831739
+      ],
+      "alignment_modes": {
+        "root_acc": "full_length"
+      }
+    }
+  }
+}
